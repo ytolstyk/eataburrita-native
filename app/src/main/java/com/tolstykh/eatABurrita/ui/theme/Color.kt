@@ -2,6 +2,9 @@ package com.tolstykh.eatABurrita.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val Orange = Color(0xFFFF8D03)
+
+val Purple = Color(0xFF9D00D6)
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)
