@@ -2,6 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.secrets.gradle.plugin)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.hilt.gradle)
+    alias(libs.plugins.ksp)
     kotlin("plugin.serialization") version "2.0.21"
 }
 
@@ -30,26 +34,54 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+
     packaging {
         resources {
             excludes += "/META-INF/*"
             merges += "META-INF/LICENSE.md"
             merges += "META-INF/LICENSE-notice.md"
+            excludes += "META-INF/gradle/incremental.annotation.processors"
         }
     }
 }
 
+secrets {
+    propertiesFileName = "secrets.properties"
+    defaultPropertiesFileName = "local.defaults.properties"
+}
+
 dependencies {
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.lifecycle.viewmodel)
+    // LiveData
+    implementation(libs.androidx.lifecycle.livedata)
+
+    // Saved state module for ViewModel
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+
+    // Annotation processor
+    kapt(libs.androidx.lifecycle.compiler)
+
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.google.maps.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.play.services.maps)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material.icons.extended)
@@ -63,6 +95,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.databinding.compiler)
+    implementation(libs.play.services.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -1,5 +1,7 @@
 package com.tolstykh.eatABurrita
 
+import android.databinding.tool.Context.resources
+import android.databinding.tool.util.Resources
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -19,7 +21,9 @@ fun formatDuration(durationInMillis: Long): String {
     val minutesStr = padWithZeros(minutes)
     val hoursStr = padWithZeros(hours)
 
-    return "$days days, $hoursStr:$minutesStr:$secondsStr"
+    val pluralDays = if (days == 1) "day" else "days"
+
+    return "$days $pluralDays, $hoursStr:$minutesStr:$secondsStr"
 }
 
 fun dateFromMilliseconds(milliseconds: Long): String {

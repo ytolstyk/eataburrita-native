@@ -2,10 +2,12 @@ package com.tolstykh.eatABurrita.ui.main
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -16,15 +18,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,45 +32,58 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tolstykh.eatABurrita.StoreManager
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
 import com.tolstykh.eatABurrita.getRandomStaticMessage
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.time.Instant
 
 @Composable
-fun TimerScreen(onOpenMap: () -> Unit) {
-    val composableScope = rememberCoroutineScope()
-    val appStore = StoreManager(context = LocalContext.current)
+fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () -> Unit) {
+    val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
 
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    if (uiState is TimeScreenViewModel.TimeScreenUIState.Loading) {
+        // You can add a loading indicator here if needed
+        return
+    }
+
+    if (uiState is TimeScreenViewModel.TimeScreenUIState.Error) {
+        // You can add an error indicator here if needed
+        return
+    }
+
+    val data = (uiState as TimeScreenViewModel.TimeScreenUIState.Success).data
+
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = colorScheme.background)
+            .padding(top = 144.dp, bottom = 96.dp)
     ) {
-        AppTitle()
-        TimeSinceLastBurrito(
-            modifier = Modifier.padding(top = 32.dp),
-            appStore = appStore
-        )
-        TotalBurritos(modifier = Modifier.padding(8.dp), appStore = appStore)
-        LastBurritoDate(modifier = Modifier.padding(8.dp), appStore = appStore)
-        Spacer(modifier = Modifier.weight(1F))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            MapButton(onClick = onOpenMap)
-            EatButton(
-                onClick = {
-                    composableScope.launch {
-                        appStore.addBurritoCount()
-                        appStore.updateTimestamp()
-                    }
-                },
+            AppTitle()
+            TimeSinceLastBurrito(
+                modifier = Modifier.padding(top = 32.dp),
+                lastTimestamp = data.lastTimestamp,
             )
-            Share(context = LocalContext.current)
+            TotalBurritos(modifier = Modifier.padding(8.dp), burritoCount = data.burritoCount)
+            LastBurritoDate(modifier = Modifier.padding(8.dp), lastTimestamp = data.lastTimestamp)
+            Spacer(modifier = Modifier.weight(1F))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                MapButton(onClick = onOpenMap)
+                EatButton(
+                    onClick = viewModel::addBurrito
+                )
+                Share(context = LocalContext.current)
+            }
         }
     }
 }
@@ -78,18 +91,8 @@ fun TimerScreen(onOpenMap: () -> Unit) {
 @Composable
 fun TimeSinceLastBurrito(
     modifier: Modifier = Modifier,
-    appStore: StoreManager
+    lastTimestamp: Long = 0L,
 ) {
-    var lastTimestamp: Long by rememberSaveable {
-        mutableLongStateOf(0)
-    }
-
-    LaunchedEffect(Unit) {
-        appStore.timestamp.collect { storedTimestamp ->
-            lastTimestamp = storedTimestamp
-        }
-    }
-
     var now by remember { mutableLongStateOf(Instant.now().toEpochMilli()) }
 
     if (lastTimestamp == 0L) {
@@ -134,8 +137,8 @@ fun EatButton(onClick: () -> Unit) {
         onClick = { onClick() },
         shape = CircleShape,
         modifier = Modifier
-            .size(120.dp)
-            .padding(4.dp),
+            .size(144.dp)
+            .padding(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = colorScheme.primary
         )
@@ -171,17 +174,9 @@ fun Share(context: Context) {
 }
 
 @Composable
-fun TotalBurritos(modifier: Modifier = Modifier, appStore: StoreManager) {
-    var count by rememberSaveable { mutableIntStateOf(0) }
-
-    LaunchedEffect(Unit) {
-        appStore.burritoCount.collect { storedCount ->
-            count = storedCount
-        }
-    }
-
+fun TotalBurritos(modifier: Modifier = Modifier, burritoCount: Int = 0) {
     Text(
-        text = "Total burritos: $count",
+        text = "Total burritos: $burritoCount",
         fontSize = 20.sp,
         lineHeight = 24.sp,
         modifier = modifier,
@@ -189,17 +184,7 @@ fun TotalBurritos(modifier: Modifier = Modifier, appStore: StoreManager) {
 }
 
 @Composable
-fun LastBurritoDate(modifier: Modifier = Modifier, appStore: StoreManager) {
-    var lastTimestamp: Long by rememberSaveable {
-        mutableLongStateOf(0)
-    }
-
-    LaunchedEffect(Unit) {
-        appStore.timestamp.collect { storedTimestamp ->
-            lastTimestamp = storedTimestamp
-        }
-    }
-
+fun LastBurritoDate(modifier: Modifier = Modifier, lastTimestamp: Long = 0L) {
     if (lastTimestamp == 0L) {
         Text(
             text = "It's time to eat a burrito!",

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Eat-a-Burrita</string>
+    <plurals name="days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
 </resources>
