@@ -1,7 +1,5 @@
 package com.tolstykh.eatABurrita
 
-import android.databinding.tool.Context.resources
-import android.databinding.tool.util.Resources
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

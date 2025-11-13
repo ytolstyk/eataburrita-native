@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
@@ -36,7 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
-import com.tolstykh.eatABurrita.getRandomStaticMessage
+import com.tolstykh.eatABurrita.helpers.getRandomStaticMessage
 import kotlinx.coroutines.delay
 import java.time.Instant
 
@@ -45,7 +47,12 @@ fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () 
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
 
     if (uiState is TimeScreenViewModel.TimeScreenUIState.Loading) {
-        // You can add a loading indicator here if needed
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
         return
     }
 

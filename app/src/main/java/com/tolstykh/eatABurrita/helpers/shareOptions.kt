@@ -1,4 +1,4 @@
-package com.tolstykh.eatABurrita
+package com.tolstykh.eatABurrita.helpers
 
 const val APP_NAME = "Eat-a-Burrita"
 

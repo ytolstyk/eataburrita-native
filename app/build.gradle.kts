@@ -75,8 +75,9 @@ dependencies {
 
     // Annotation processor
     kapt(libs.androidx.lifecycle.compiler)
-
     kapt(libs.hilt.compiler)
+
+    implementation(libs.accompanist.permissions)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.google.maps.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
