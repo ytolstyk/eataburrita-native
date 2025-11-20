@@ -40,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -75,6 +74,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.tolstykh.eatABurrita.BuildConfig
 import com.tolstykh.eatABurrita.R
+import com.tolstykh.eatABurrita.helpers.distanceBetweenInMiles
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.location.hasLocationPermission
 import com.tolstykh.eatABurrita.readablePlaceAddress
@@ -248,7 +248,7 @@ fun FullMapView(
                     Log.e("Places", "Error occurred: $exception")
                 }).await()
         } catch (e: Exception) {
-            // Handle exception
+            Log.e("Places", "Error occurred: $e")
         }
     }
 
@@ -256,11 +256,12 @@ fun FullMapView(
         Spacer(modifier = Modifier.height(statusBarHeight()))
         Box {
             GoogleMap(
+                onMapLoaded = {},
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraState,
                 properties = MapProperties(
                     isMyLocationEnabled = true,
-                    mapType = MapType.HYBRID,
+                    mapType = MapType.NORMAL,
                     isTrafficEnabled = true
                 )
             ) {
@@ -315,24 +316,34 @@ fun CustomMarker(place: Place, latLng: LatLng, currentPosition: LatLng) {
         title = place.displayName,
         snippet = address,
         anchor = Offset(0f, 1f),
+        onInfoWindowClick = {
+            val uri =
+                "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${currentPosition.latitude},${currentPosition.longitude}&destination=${latLng.latitude},${latLng.longitude}".toUri()
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+            }
+        },
         infoContent = {
             Column(
                 modifier = Modifier
-                    .padding(8.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(LocalExColorScheme.current.extra.iconBackground)
-                    .shadow(
-                        elevation = 16.dp,
-                        shape = RoundedCornerShape(16.dp),
-                        clip = false
+                    .border(
+                        2.dp,
+                        LocalExColorScheme.current.extra.iconOutline,
+                        shape = RoundedCornerShape(16.dp)
                     )
-                    .padding(16.dp),
+                    .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = place.displayName ?: "",
                     style = MaterialTheme.typography.headlineSmall,
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = "${distanceBetweenInMiles(currentPosition, place.location)} miles away")
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = address)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -342,15 +353,7 @@ fun CustomMarker(place: Place, latLng: LatLng, currentPosition: LatLng) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorScheme.primary
                     ),
-                    onClick = {
-                        val uri =
-                            "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${currentPosition.latitude},${currentPosition.longitude}&destination=${latLng.latitude},${latLng.longitude}".toUri()
-                        val intent = Intent(Intent.ACTION_VIEW, uri)
-
-                        if (intent.resolveActivity(context.packageManager) != null) {
-                            context.startActivity(intent)
-                        }
-                    }
+                    onClick = {}
                 ) {
                     Text("Let's go!", fontSize = 18.dp.value.sp)
                 }
