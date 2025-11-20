@@ -1,6 +1,5 @@
 package com.tolstykh.eatABurrita.ui.map
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
@@ -15,9 +14,6 @@ import kotlinx.coroutines.launch
 class MapScreenViewModel @Inject constructor(
     private val getLocationUseCase: GetLocationUseCase
 ) : ViewModel() {
-    init {
-        Log.d("MapScreenViewModel", "init")
-    }
     private val _viewState: MutableStateFlow<ViewState> = MutableStateFlow(ViewState.Loading)
     val viewState = _viewState.asStateFlow()
 

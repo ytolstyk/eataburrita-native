@@ -72,6 +72,7 @@ dependencies {
 
     // Saved state module for ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+    implementation(libs.places)
 
     // Annotation processor
     kapt(libs.androidx.lifecycle.compiler)

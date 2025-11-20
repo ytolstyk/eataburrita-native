@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 data class ColorFamily(
     val iconTint: Color,
     val iconBackground: Color,
+    val iconOutline: Color,
 )
 
 data class ExtendedColorScheme(
@@ -16,12 +17,14 @@ val extendedLight = ExtendedColorScheme(
     extra = ColorFamily(
         iconTint = BlackText,
         iconBackground = WhiteText,
+        iconOutline = DarkIconOutline,
     ),
 )
 val extendedDark = ExtendedColorScheme(
     extra = ColorFamily(
         iconTint = WhiteText,
         iconBackground = BlackText,
+        iconOutline = DarkIconOutline,
     ),
 )
 val LocalExColorScheme = staticCompositionLocalOf { ExtendedColorScheme() }

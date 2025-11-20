@@ -1,5 +1,6 @@
 package com.tolstykh.eatABurrita
 
+import com.google.android.libraries.places.api.model.AddressComponents
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -29,4 +30,40 @@ fun dateFromMilliseconds(milliseconds: Long): String {
     val formatter = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.getDefault())
 
     return formatter.format(date)
+}
+
+fun readablePlaceAddress(address: AddressComponents?): String {
+    if (address == null) return ""
+
+    var streetNumber: String? = ""
+    var streetName: String? = ""
+    var city: String? = ""
+    var zipCode: String? = ""
+    var state: String? = ""
+
+    address.asList().forEach { component ->
+        when {
+            component.types.contains("street_number") -> {
+                streetNumber = component.shortName
+            }
+
+            component.types.contains("route") -> {
+                streetName = component.shortName
+            }
+
+            component.types.contains("locality") -> {
+                city = component.shortName
+            }
+
+            component.types.contains("administrative_area_level_1") -> {
+                state = component.shortName
+            }
+
+            component.types.contains("postal_code") -> {
+                zipCode = component.shortName
+            }
+        }
+    }
+
+    return "${streetNumber.orEmpty()} ${streetName.orEmpty()},\n${city.orEmpty()}, ${state.orEmpty()} ${zipCode.orEmpty()}"
 }
