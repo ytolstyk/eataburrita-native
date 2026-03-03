@@ -13,11 +13,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 data class TimeScreenData(
     val burritoCount: Int,
     val lastTimestamp: Long,
+    val dailyCounts: List<Int>,
 )
 
 @HiltViewModel
@@ -25,11 +29,16 @@ class TimeScreenViewModel @Inject constructor(
     private val dao: BurritoDao,
 ) : ViewModel() {
 
+    private val thirtyDaysAgo: Long = Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
+
     val timeScreenState: StateFlow<TimeScreenUIState> =
-        dao.getCount()
-            .combine(dao.getLatestTimestamp()) { count, lastTs ->
-                TimeScreenData(count, lastTs ?: 0L)
-            }
+        combine(
+            dao.getCount(),
+            dao.getLatestTimestamp(),
+            dao.getEntriesSince(thirtyDaysAgo),
+        ) { count, lastTs, entries ->
+            TimeScreenData(count, lastTs ?: 0L, buildDailyCounts(entries))
+        }
             .map<TimeScreenData, TimeScreenUIState>(TimeScreenUIState::Success)
             .catch { emit(TimeScreenUIState.Error(it)) }
             .stateIn(
@@ -41,6 +50,18 @@ class TimeScreenViewModel @Inject constructor(
     fun addBurrito() {
         viewModelScope.launch {
             dao.insert(BurritoEntry(timestamp = Instant.now().toEpochMilli()))
+        }
+    }
+
+    private fun buildDailyCounts(entries: List<BurritoEntry>): List<Int> {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val countByDay = entries
+            .map { Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
+            .groupingBy { it }
+            .eachCount()
+        return (29 downTo 0).map { daysAgo ->
+            countByDay[today.minusDays(daysAgo.toLong())] ?: 0
         }
     }
 

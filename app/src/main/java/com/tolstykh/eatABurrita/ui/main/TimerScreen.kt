@@ -2,6 +2,7 @@ package com.tolstykh.eatABurrita.ui.main
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -30,14 +33,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
+import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
 import com.tolstykh.eatABurrita.helpers.getRandomStaticMessage
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -57,7 +65,6 @@ fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () 
     }
 
     if (uiState is TimeScreenViewModel.TimeScreenUIState.Error) {
-        // You can add an error indicator here if needed
         return
     }
 
@@ -80,6 +87,14 @@ fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () 
             )
             TotalBurritos(modifier = Modifier.padding(8.dp), burritoCount = data.burritoCount)
             LastBurritoDate(modifier = Modifier.padding(8.dp), lastTimestamp = data.lastTimestamp)
+            Spacer(modifier = Modifier.height(24.dp))
+            BurritoConsumptionChart(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .padding(horizontal = 24.dp),
+                dailyCounts = data.dailyCounts,
+            )
             Spacer(modifier = Modifier.weight(1F))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -89,9 +104,60 @@ fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () 
                 EatButton(
                     onClick = viewModel::addBurrito
                 )
-                Share(context = LocalContext.current)
+                Share(
+                    context = LocalContext.current,
+                    burritoCount = data.burritoCount,
+                    lastTimestamp = data.lastTimestamp,
+                    dailyCounts = data.dailyCounts,
+                )
             }
         }
+    }
+}
+
+@Composable
+fun BurritoConsumptionChart(
+    modifier: Modifier = Modifier,
+    dailyCounts: List<Int>,
+) {
+    val primaryColor = colorScheme.primary
+    val barBackground = colorScheme.surfaceVariant
+
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Canvas(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            val maxCount = dailyCounts.maxOrNull()?.coerceAtLeast(1) ?: 1
+            val barCount = dailyCounts.size
+            val gap = 2.dp.toPx()
+            val barWidth = (size.width - gap * (barCount - 1)) / barCount
+
+            dailyCounts.forEachIndexed { index, count ->
+                val left = index * (barWidth + gap)
+                val barHeight = (count.toFloat() / maxCount) * size.height
+
+                drawRoundRect(
+                    color = barBackground,
+                    topLeft = Offset(left, 0f),
+                    size = Size(barWidth, size.height),
+                    cornerRadius = CornerRadius(3.dp.toPx()),
+                )
+
+                if (count > 0) {
+                    val alpha = 0.4f + 0.6f * index / (barCount - 1).coerceAtLeast(1)
+                    drawRoundRect(
+                        color = primaryColor.copy(alpha = alpha),
+                        topLeft = Offset(left, size.height - barHeight),
+                        size = Size(barWidth, barHeight),
+                        cornerRadius = CornerRadius(3.dp.toPx()),
+                    )
+                }
+            }
+        }
+        Text(
+            text = "Last 30 days",
+            fontSize = 11.sp,
+            color = colorScheme.onSurface.copy(alpha = 0.45f),
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 
@@ -155,10 +221,15 @@ fun EatButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun Share(context: Context) {
+fun Share(
+    context: Context,
+    burritoCount: Int = 0,
+    lastTimestamp: Long = 0L,
+    dailyCounts: List<Int> = emptyList(),
+) {
     Button(
         onClick = {
-            val text = getRandomStaticMessage()
+            val text = getRandomMessageWithStats(burritoCount, lastTimestamp, dailyCounts)
             val sendIntent = Intent(Intent.ACTION_SEND).apply {
                 putExtra(Intent.EXTRA_TEXT, text)
                 type = "text/plain"
@@ -225,4 +296,21 @@ fun MapButton(onClick: () -> Unit) {
             contentDescription = null,
         )
     }
+}
+
+@Preview(showBackground = true, heightDp = 200)
+@Composable
+private fun BurritoConsumptionChartPreview() {
+    val fakeData = listOf(
+        2, 1, 0, 3, 2, 1, 0, 2, 1, 4,
+        2, 0, 1, 3, 2, 1, 0, 2, 1, 3,
+        2, 1, 0, 1, 2, 0, 3, 2, 1, 2,
+    )
+    BurritoConsumptionChart(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .padding(horizontal = 24.dp),
+        dailyCounts = fakeData,
+    )
 }
