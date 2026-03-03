@@ -4,14 +4,17 @@ import android.Manifest
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,10 +39,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -68,7 +72,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerInfoWindowComposable
+import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
@@ -201,6 +205,7 @@ fun FullMapView(
         MarkerState(position = marker)
     }
     val places = remember { mutableStateListOf<Place>() }
+    var selectedPlace by remember { mutableStateOf<Place?>(null) }
     val context = LocalContext.current
     val placesClient: PlacesClient = remember {
         if (!Places.isInitialized()) {
@@ -208,6 +213,12 @@ fun FullMapView(
         }
 
         Places.createClient(context)
+    }
+
+    LaunchedEffect(selectedPlace) {
+        selectedPlace?.location?.let { loc ->
+            cameraState.animate(CameraUpdateFactory.newLatLngZoom(loc, 16f), 350)
+        }
     }
 
     LaunchedEffect(key1 = currentPosition) {
@@ -257,6 +268,7 @@ fun FullMapView(
         Box {
             GoogleMap(
                 onMapLoaded = {},
+                onMapClick = { selectedPlace = null },
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraState,
                 properties = MapProperties(
@@ -276,9 +288,31 @@ fun FullMapView(
                         CustomMarker(
                             place = place,
                             latLng = latLng,
-                            currentPosition = currentPosition
+                            currentPosition = currentPosition,
+                            onPlaceSelected = { selectedPlace = it }
                         )
                     }
+                }
+            }
+            androidx.compose.animation.AnimatedVisibility(
+                visible = selectedPlace != null,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = slideInVertically { it },
+                exit = slideOutVertically { it }
+            ) {
+                selectedPlace?.let { place ->
+                    PlaceBottomTray(
+                        place = place,
+                        currentPosition = currentPosition,
+                        onNavigate = {
+                            val uri =
+                                "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${currentPosition.latitude},${currentPosition.longitude}&destination=${place.location?.latitude},${place.location?.longitude}".toUri()
+                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                            if (intent.resolveActivity(context.packageManager) != null) {
+                                context.startActivity(intent)
+                            }
+                        }
+                    )
                 }
             }
             Button(
@@ -306,59 +340,14 @@ fun FullMapView(
 }
 
 @Composable
-fun CustomMarker(place: Place, latLng: LatLng, currentPosition: LatLng) {
-    val context = LocalContext.current
-    val address = readablePlaceAddress(place.addressComponents)
+fun CustomMarker(place: Place, latLng: LatLng, currentPosition: LatLng, onPlaceSelected: (Place) -> Unit) {
     val shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 0.dp)
 
-    MarkerInfoWindowComposable(
+    MarkerComposable(
         state = rememberUpdatedMarkerState(position = latLng),
         title = place.displayName,
-        snippet = address,
         anchor = Offset(0f, 1f),
-        onInfoWindowClick = {
-            val uri =
-                "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${currentPosition.latitude},${currentPosition.longitude}&destination=${latLng.latitude},${latLng.longitude}".toUri()
-            val intent = Intent(Intent.ACTION_VIEW, uri)
-
-            if (intent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(intent)
-            }
-        },
-        infoContent = {
-            Column(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(LocalExColorScheme.current.extra.iconBackground)
-                    .border(
-                        2.dp,
-                        LocalExColorScheme.current.extra.iconOutline,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = place.displayName ?: "",
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "${distanceBetweenInMiles(currentPosition, place.location)} miles away")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = address)
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    shape = CircleShape,
-                    modifier = Modifier.height(60.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorScheme.primary
-                    ),
-                    onClick = {}
-                ) {
-                    Text("Let's go!", fontSize = 18.dp.value.sp)
-                }
-            }
-        }
+        onClick = { onPlaceSelected(place); true }
     ) {
         Image(
             painter = painterResource(id = R.drawable.burrito_icon),
@@ -367,6 +356,57 @@ fun CustomMarker(place: Place, latLng: LatLng, currentPosition: LatLng) {
                 .size(60.dp)
                 .border(6.dp, LocalExColorScheme.current.extra.iconOutline, shape = shape),
         )
+    }
+}
+
+@Composable
+fun PlaceBottomTray(
+    place: Place,
+    currentPosition: LatLng,
+    onNavigate: () -> Unit
+) {
+    val address = readablePlaceAddress(place.addressComponents)
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 16.dp,
+        color = colorScheme.primary,
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = place.displayName ?: "",
+                style = MaterialTheme.typography.headlineSmall,
+                color = colorScheme.onPrimary,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "${distanceBetweenInMiles(currentPosition, place.location)} miles away",
+                color = colorScheme.onPrimary,
+            )
+            if (address.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onPrimary,
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onNavigate,
+                shape = CircleShape,
+                modifier = Modifier.height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary)
+            ) {
+                Text("Navigate", fontSize = 18.dp.value.sp, color = colorScheme.onSecondary)
+            }
+        }
     }
 }
 
@@ -409,5 +449,5 @@ private suspend fun CameraPositionState.centerOnLocation(
         location,
         14f
     ),
-    durationMs = 1500
+    durationMs = 600
 )
