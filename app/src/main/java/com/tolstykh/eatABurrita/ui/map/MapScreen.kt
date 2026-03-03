@@ -163,31 +163,21 @@ fun MapScreen(
                 }
 
                 is ViewState.Success -> {
-                    val currentLoc =
-                        LatLng(
-                            location?.latitude ?: 0.0,
-                            location?.longitude ?: 0.0
-                        )
                     val cameraState = rememberCameraPositionState()
 
-                    LaunchedEffect(key1 = currentLoc) {
-                        var counter = 0
-                        while (currentLoc.latitude == 0.0 && currentLoc.longitude == 0.0 && counter < 25) {
-                            delay(200L)
-                            counter++
+                    LaunchedEffect(key1 = location) {
+                        location?.let {
+                            cameraState.centerOnLocation(it)
                         }
-
-                        cameraState.centerOnLocation(currentLoc)
                     }
 
-                    FullMapView(
-                        currentPosition = LatLng(
-                            currentLoc.latitude,
-                            currentLoc.longitude
-                        ),
-                        cameraState = cameraState,
-                        onBackPressed = onBackPressed
-                    )
+                    location?.let { currentLoc ->
+                        FullMapView(
+                            currentPosition = currentLoc,
+                            cameraState = cameraState,
+                            onBackPressed = onBackPressed
+                        )
+                    }
                 }
             }
         }
