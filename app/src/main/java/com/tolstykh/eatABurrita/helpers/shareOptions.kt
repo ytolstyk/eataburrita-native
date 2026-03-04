@@ -5,19 +5,6 @@ import kotlin.math.roundToInt
 
 const val APP_NAME = "Eat-a-Burrita"
 
-const val genericMessage = "I need to eat a burrito, so I can track it with $APP_NAME!"
-val staticMessages = arrayOf(
-    genericMessage,
-    "I just ate a burrito, and it was delicious!",
-    "Tracking my burritos has never been easier - thanks $APP_NAME!",
-    "Are you up for some burritos?",
-    "Give me a B! Give me a urrito! No, really, give me a burrito. Please.",
-)
-
-fun getRandomStaticMessage(): String {
-    return staticMessages.random()
-}
-
 fun getRandomMessageWithStats(
     burritoCount: Int,
     lastTimestamp: Long,
@@ -36,7 +23,7 @@ fun getRandomMessageWithStats(
         -1
     }
 
-    val messages = listOf(
+    val messages = listOfNotNull(
         "🌯 I've eaten $burritoCount burritos with $APP_NAME!",
         "🌯 On a burrito streak! Averaging $avgDaily burritos/day.",
         "🌯 My best day: $maxDaily burritos! (30-day record)",
@@ -45,7 +32,7 @@ fun getRandomMessageWithStats(
         "🌯 $totalLast30 burritos in the last 30 days!",
         "🌯 $burritoCount total burritos tracked. Tracking burritos is my passion!",
         "🌯 Averaging $avgDaily burritos per day. That's commitment!",
-    ).filterNotNull()
+    )
 
     return messages.random()
 }
