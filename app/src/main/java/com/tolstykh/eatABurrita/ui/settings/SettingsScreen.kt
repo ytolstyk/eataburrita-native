@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -104,26 +106,42 @@ fun SettingsScreen(
         Text("Entries", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        entries.forEach { entry ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+        // Rounded card with elevated tonal background signals a scrollable region
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            tonalElevation = 8.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            // 48.dp per row × 10 rows; inner scroll lets the rest be reached
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 4.dp),
             ) {
-                Text(
-                    text = dateFromMilliseconds(entry.timestamp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = {
-                    editingEntry = entry
-                    selectedDateMillis = entry.timestamp
-                    editorStep = 1
-                }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit")
-                }
-                IconButton(onClick = { viewModel.deleteEntry(entry) }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = colorScheme.error)
+                entries.forEach { entry ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = dateFromMilliseconds(entry.timestamp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = {
+                            editingEntry = entry
+                            selectedDateMillis = entry.timestamp
+                            editorStep = 1
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        }
+                        IconButton(onClick = { viewModel.deleteEntry(entry) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = colorScheme.error)
+                        }
+                    }
                 }
             }
         }
