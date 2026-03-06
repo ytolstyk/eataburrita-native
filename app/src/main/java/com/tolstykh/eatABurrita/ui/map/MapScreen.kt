@@ -30,7 +30,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,6 +60,7 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.CircularBounds
 import com.google.android.libraries.places.api.model.Place
@@ -71,6 +71,8 @@ import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
@@ -253,6 +255,11 @@ fun FullMapView(
         }
     }
 
+    val isDarkMode = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mapStyleOptions = if (isDarkMode) {
+        MapStyleOptions.loadRawResourceStyle(context, com.tolstykh.eatABurrita.R.raw.map_style_dark)
+    } else null
+
     Column {
         Spacer(modifier = Modifier.height(statusBarHeight()))
         Box {
@@ -264,7 +271,8 @@ fun FullMapView(
                 properties = MapProperties(
                     isMyLocationEnabled = true,
                     mapType = MapType.NORMAL,
-                    isTrafficEnabled = true
+                    isTrafficEnabled = true,
+                    mapStyleOptions = mapStyleOptions,
                 )
             ) {
                 Marker(
