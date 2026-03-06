@@ -358,7 +358,7 @@ fun PlaceBottomTray(
     val address = readablePlaceAddress(place.addressComponents)
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth(0.72f)
             .padding(16.dp),
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 16.dp,
