@@ -46,7 +46,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
 import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
-import com.tolstykh.eatABurrita.helpers.getRandomStaticMessage
 import kotlinx.coroutines.delay
 import java.time.Instant
 
