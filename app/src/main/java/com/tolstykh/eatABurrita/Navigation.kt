@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tolstykh.eatABurrita.ui.main.TimerScreen
 import com.tolstykh.eatABurrita.ui.map.MapScreen
+import com.tolstykh.eatABurrita.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -23,9 +24,8 @@ fun Navigation(
     ) {
         composable<Home> {
             TimerScreen(
-                onOpenMap = {
-                    navController.navigate(Map)
-                },
+                onOpenMap = { navController.navigate(Map) },
+                onOpenSettings = { navController.navigate(Settings) },
             )
         }
         composable<Map> {
@@ -37,6 +37,9 @@ fun Navigation(
                 }
             )
         }
+        composable<Settings> {
+            SettingsScreen(onBackPressed = { navController.popBackStack() })
+        }
     }
 }
 
@@ -45,3 +48,6 @@ data object Home
 
 @Serializable
 data object Map
+
+@Serializable
+data object Settings

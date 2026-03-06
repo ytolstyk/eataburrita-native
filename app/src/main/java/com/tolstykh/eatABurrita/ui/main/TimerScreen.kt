@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -46,11 +48,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
 import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
+import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import kotlinx.coroutines.delay
 import java.time.Instant
 
 @Composable
-fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () -> Unit) {
+fun TimerScreen(
+    viewModel: TimeScreenViewModel = hiltViewModel(),
+    onOpenMap: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
 
     if (uiState is TimeScreenViewModel.TimeScreenUIState.Loading) {
@@ -69,6 +76,7 @@ fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () 
 
     val data = (uiState as TimeScreenViewModel.TimeScreenUIState.Success).data
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -112,6 +120,15 @@ fun TimerScreen(viewModel: TimeScreenViewModel = hiltViewModel(), onOpenMap: () 
             }
         }
     }
+    IconButton(
+        onClick = onOpenSettings,
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(top = statusBarHeight() + 8.dp, end = 8.dp)
+    ) {
+        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = colorScheme.onBackground)
+    }
+    } // end Box
 }
 
 @Composable
