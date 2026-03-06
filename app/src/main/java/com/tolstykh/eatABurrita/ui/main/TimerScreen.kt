@@ -165,7 +165,7 @@ fun TimeSinceLastBurrito(
     modifier: Modifier = Modifier,
     lastTimestamp: Long = 0L,
 ) {
-    var now by remember { mutableLongStateOf(Instant.now().toEpochMilli()) }
+    var now by remember(lastTimestamp) { mutableLongStateOf(Instant.now().toEpochMilli()) }
 
     if (lastTimestamp == 0L) {
         Text(
@@ -177,7 +177,7 @@ fun TimeSinceLastBurrito(
         return
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(lastTimestamp) {
         while (true) {
             delay(1000L)
             now = Instant.now().toEpochMilli()
