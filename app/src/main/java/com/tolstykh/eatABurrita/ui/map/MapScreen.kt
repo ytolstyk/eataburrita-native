@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -89,7 +87,6 @@ import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.location.hasLocationPermission
 import com.tolstykh.eatABurrita.readablePlaceAddress
 import com.tolstykh.eatABurrita.ui.theme.LocalExColorScheme
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -247,22 +244,22 @@ fun FullMapView(
 
         try {
             placesClient.searchNearby(searchNearbyRequest)
-                .addOnSuccessListener({ response ->
+                .addOnSuccessListener{ response ->
                     Log.d("Places", "Response: $response")
                     response.places.let { places.addAll(it) }
-                })
-                .addOnFailureListener({ exception ->
+                }
+                .addOnFailureListener{ exception ->
                     Log.e("Places", "Error occurred: $exception")
-                }).await()
+                }.await()
         } catch (e: Exception) {
             Log.e("Places", "Error occurred: $e")
         }
     }
 
     val scope = rememberCoroutineScope()
-    val isDarkMode = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val isDarkMode = colorScheme.background.luminance() < 0.5f
     val mapStyleOptions = if (isDarkMode) {
-        MapStyleOptions.loadRawResourceStyle(context, com.tolstykh.eatABurrita.R.raw.map_style_dark)
+        MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_dark)
     } else null
 
     Column {
@@ -291,7 +288,6 @@ fun FullMapView(
                         CustomMarker(
                             place = place,
                             latLng = latLng,
-                            currentPosition = currentPosition,
                             onPlaceSelected = { selectedPlace = it }
                         )
                     }
@@ -380,7 +376,7 @@ fun FullMapView(
 }
 
 @Composable
-fun CustomMarker(place: Place, latLng: LatLng, currentPosition: LatLng, onPlaceSelected: (Place) -> Unit) {
+fun CustomMarker(place: Place, latLng: LatLng, onPlaceSelected: (Place) -> Unit) {
     val shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 0.dp)
 
     MarkerComposable(
