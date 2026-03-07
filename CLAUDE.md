@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew test                   # Run unit tests
 ./gradlew connectedAndroidTest   # Run instrumented tests (requires device/emulator)
 ./gradlew clean                  # Clean build artifacts
+./gradlew lint                   # Run static code analysis (Lint checks)
 ```
 
 ## Project Overview
