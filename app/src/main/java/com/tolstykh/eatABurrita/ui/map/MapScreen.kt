@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -59,7 +61,9 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapsInitializer
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.launch
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.CircularBounds
@@ -255,6 +259,7 @@ fun FullMapView(
         }
     }
 
+    val scope = rememberCoroutineScope()
     val isDarkMode = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val mapStyleOptions = if (isDarkMode) {
         MapStyleOptions.loadRawResourceStyle(context, com.tolstykh.eatABurrita.R.raw.map_style_dark)
@@ -318,9 +323,10 @@ fun FullMapView(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(8.dp)
-                    .wrapContentSize(),
+                    .size(36.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = LocalExColorScheme.current.extra.iconBackground
+                    containerColor = LocalExColorScheme.current.extra.iconBackground.copy(alpha = 0.6f)
                 ),
                 elevation = ButtonDefaults.elevatedButtonElevation(
                     defaultElevation = 12.dp,
@@ -330,6 +336,42 @@ fun FullMapView(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
+                    tint = LocalExColorScheme.current.extra.iconTint
+                )
+            }
+            Button(
+                onClick = {
+                    scope.launch {
+                        val current = cameraState.position
+                        cameraState.animate(
+                            CameraUpdateFactory.newCameraPosition(
+                                CameraPosition.builder()
+                                    .target(current.target)
+                                    .zoom(current.zoom)
+                                    .bearing(0f)
+                                    .tilt(0f)
+                                    .build()
+                            ),
+                            durationMs = 400,
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 8.dp, top = 56.dp)
+                    .size(36.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LocalExColorScheme.current.extra.iconBackground.copy(alpha = 0.6f)
+                ),
+                elevation = ButtonDefaults.elevatedButtonElevation(
+                    defaultElevation = 12.dp,
+                ),
+                shape = RectangleShape,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Explore,
+                    contentDescription = "Reset orientation",
                     tint = LocalExColorScheme.current.extra.iconTint
                 )
             }
