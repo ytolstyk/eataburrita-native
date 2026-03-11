@@ -24,6 +24,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val openMap = intent.getBooleanExtra(EXTRA_OPEN_MAP, false)
+
         setContent {
             val isDark by appPrefs.isDarkMode.collectAsStateWithLifecycle(initialValue = false)
 
@@ -52,8 +54,15 @@ class MainActivity : ComponentActivity() {
             }
 
             EataBurritaTheme(darkTheme = isDark, dynamicColor = false) {
-                Navigation(modifier = Modifier.fillMaxSize())
+                Navigation(
+                    modifier = Modifier.fillMaxSize(),
+                    startDestination = if (openMap) Map else Home
+                )
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_MAP = "extra_open_map"
     }
 }

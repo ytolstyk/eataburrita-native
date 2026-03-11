@@ -16,10 +16,11 @@ import kotlinx.serialization.Serializable
 fun Navigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    startDestination: Any = Home,
 ) {
     NavHost(
         navController = navController,
-        startDestination = Home,
+        startDestination = startDestination,
         modifier = modifier.fillMaxSize(),
     ) {
         composable<Home> {

@@ -18,6 +18,9 @@ interface BurritoDao {
     @Query("SELECT MAX(timestamp) FROM burrito_entries")
     fun getLatestTimestamp(): Flow<Long?>
 
+    @Query("SELECT MAX(timestamp) FROM burrito_entries")
+    suspend fun getLatestTimestampOnce(): Long?
+
     @Query("SELECT * FROM burrito_entries WHERE timestamp >= :since ORDER BY timestamp ASC")
     fun getEntriesSince(since: Long): Flow<List<BurritoEntry>>
 
