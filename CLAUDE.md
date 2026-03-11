@@ -28,6 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Screens & Navigation
 
 Type-safe Compose Navigation (`Navigation.kt`) with two serializable routes:
+
 - `Home` → `TimerScreen` — shows time since last burrito and total count
 - `Map` → `MapScreen` — Google Maps with nearby Mexican restaurant markers
 
@@ -64,20 +65,25 @@ Type-safe Compose Navigation (`Navigation.kt`) with two serializable routes:
 
 ## Key Files
 
-| File | Role |
-|------|------|
-| `EatABurrita.kt` | `@HiltAndroidApp` Application class; provides `dataStore` singleton |
-| `MainActivity.kt` | Entry point; edge-to-edge + Compose setup |
-| `Navigation.kt` | Nav graph definition |
-| `ui/main/TimerScreen.kt` + `TimeScreenViewModel.kt` | Home screen |
-| `ui/map/MapScreen.kt` + `MapScreenViewModel.kt` | Map screen |
-| `location/LocationService.kt` | Flow-based location updates |
-| `location/LocationModule.kt` | Hilt bindings for location |
-| `gradle/libs.versions.toml` | All dependency versions (version catalog) |
+| File                                                | Role                                                                |
+| --------------------------------------------------- | ------------------------------------------------------------------- |
+| `EatABurrita.kt`                                    | `@HiltAndroidApp` Application class; provides `dataStore` singleton |
+| `MainActivity.kt`                                   | Entry point; edge-to-edge + Compose setup                           |
+| `Navigation.kt`                                     | Nav graph definition                                                |
+| `ui/main/TimerScreen.kt` + `TimeScreenViewModel.kt` | Home screen                                                         |
+| `ui/map/MapScreen.kt` + `MapScreenViewModel.kt`     | Map screen                                                          |
+| `location/LocationService.kt`                       | Flow-based location updates                                         |
+| `location/LocationModule.kt`                        | Hilt bindings for location                                          |
+| `gradle/libs.versions.toml`                         | All dependency versions (version catalog)                           |
 
 ## API Keys
 
 Add a `secrets.properties` file at the project root (not committed to git):
+
 ```
 MAPS_API_KEY=your_google_maps_api_key_here
 ```
+
+## Validations
+
+Clean up unused imports, constants, functions before submitting.

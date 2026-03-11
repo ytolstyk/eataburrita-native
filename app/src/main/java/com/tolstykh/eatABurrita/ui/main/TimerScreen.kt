@@ -4,7 +4,12 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,11 +86,13 @@ fun TimerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(color = colorScheme.background)
-            .padding(top = 144.dp, bottom = 96.dp)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(vertical = 24.dp)
     ) {
         Column(
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.verticalScroll(rememberScrollState())
         ) {
             AppTitle()
             TimeSinceLastBurrito(
@@ -102,7 +109,7 @@ fun TimerScreen(
                     .padding(horizontal = 24.dp),
                 dailyCounts = data.dailyCounts,
             )
-            Spacer(modifier = Modifier.weight(1F))
+            Spacer(modifier = Modifier.height(48.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start

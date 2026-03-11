@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew assembleDebug:*)",
+      "Bash(./gradlew assembleDebug:*)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "jcodemunch"
+  ],
+  "enableAllProjectMcpServers": true
 }
