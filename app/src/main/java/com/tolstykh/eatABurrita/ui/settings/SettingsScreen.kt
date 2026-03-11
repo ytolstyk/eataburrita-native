@@ -71,6 +71,13 @@ fun SettingsScreen(
     // selectedDateMillis holds UTC-midnight date millis after date picker confirms
     var selectedDateMillis by rememberSaveable { mutableLongStateOf(System.currentTimeMillis()) }
 
+    var currentPage by rememberSaveable { mutableIntStateOf(0) }
+    val pageSize = 30
+    val totalPages = maxOf(1, (entries.size + pageSize - 1) / pageSize)
+    val safePage = currentPage.coerceIn(0, totalPages - 1)
+    if (currentPage != safePage) currentPage = safePage
+    val pagedEntries = entries.drop(safePage * pageSize).take(pageSize)
+
     Surface(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
@@ -120,7 +127,7 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 4.dp),
             ) {
-                entries.forEach { entry ->
+                pagedEntries.forEach { entry ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -143,6 +150,29 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+        }
+
+        if (totalPages > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = { currentPage-- },
+                    enabled = safePage > 0,
+                ) { Text("← Prev") }
+                Text(
+                    "${safePage + 1} / $totalPages",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                TextButton(
+                    onClick = { currentPage++ },
+                    enabled = safePage < totalPages - 1,
+                ) { Text("Next →") }
             }
         }
 
