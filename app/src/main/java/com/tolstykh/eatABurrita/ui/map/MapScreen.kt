@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
@@ -207,6 +208,8 @@ fun FullMapView(
     }
     val places = remember { mutableStateListOf<Place>() }
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
+    var mapType by remember { mutableStateOf(MapType.NORMAL) }
+    var showLayersMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val placesClient: PlacesClient = remember {
         if (!Places.isInitialized()) {
@@ -280,9 +283,9 @@ fun FullMapView(
                 cameraPositionState = cameraState,
                 properties = MapProperties(
                     isMyLocationEnabled = true,
-                    mapType = MapType.NORMAL,
+                    mapType = mapType,
                     isTrafficEnabled = true,
-                    mapStyleOptions = mapStyleOptions,
+                    mapStyleOptions = if (mapType == MapType.NORMAL) mapStyleOptions else null,
                 )
             ) {
                 Marker(
@@ -342,6 +345,52 @@ fun FullMapView(
                     contentDescription = "Back",
                     tint = extendedLight.extra.iconTint
                 )
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 8.dp, top = 104.dp)
+            ) {
+                Button(
+                    onClick = { showLayersMenu = !showLayersMenu },
+                    modifier = Modifier.size(40.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = extendedLight.extra.iconBackground.copy(alpha = 0.85f)
+                    ),
+                    elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Layers,
+                        contentDescription = "Map layers",
+                        tint = extendedLight.extra.iconTint
+                    )
+                }
+                androidx.compose.material3.DropdownMenu(
+                    expanded = showLayersMenu,
+                    onDismissRequest = { showLayersMenu = false }
+                ) {
+                    listOf(
+                        MapType.NORMAL to "Normal",
+                        MapType.SATELLITE to "Satellite",
+                        MapType.HYBRID to "Hybrid",
+                        MapType.TERRAIN to "Terrain"
+                    ).forEach { (type, label) ->
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = { mapType = type; showLayersMenu = false },
+                            leadingIcon = if (mapType == type) ({
+                                Icon(
+                                    imageVector = Icons.Default.Layers,
+                                    contentDescription = null,
+                                    tint = colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }) else null
+                        )
+                    }
+                }
             }
             Button(
                 onClick = {
