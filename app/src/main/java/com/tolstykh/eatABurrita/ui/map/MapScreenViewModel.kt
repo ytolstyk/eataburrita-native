@@ -2,6 +2,7 @@ package com.tolstykh.eatABurrita.ui.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.tolstykh.eatABurrita.location.GetLocationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,6 +17,8 @@ class MapScreenViewModel @Inject constructor(
 ) : ViewModel() {
     private val _viewState: MutableStateFlow<ViewState> = MutableStateFlow(ViewState.Loading)
     val viewState = _viewState.asStateFlow()
+
+    var lastCameraPosition: CameraPosition? = null
 
     fun handle(event: PermissionEvent) {
         when (event) {

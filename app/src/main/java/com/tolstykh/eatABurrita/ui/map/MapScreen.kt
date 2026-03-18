@@ -166,12 +166,20 @@ fun MapScreen(
                 }
 
                 is ViewState.Success -> {
-                    val cameraState = rememberCameraPositionState()
+                    val cameraState = rememberCameraPositionState {
+                        viewModel.lastCameraPosition?.let { position = it }
+                    }
 
                     LaunchedEffect(key1 = location) {
-                        location?.let {
-                            cameraState.centerOnLocation(it)
+                        if (viewModel.lastCameraPosition == null) {
+                            location?.let {
+                                cameraState.centerOnLocation(it)
+                            }
                         }
+                    }
+
+                    LaunchedEffect(cameraState.position) {
+                        viewModel.lastCameraPosition = cameraState.position
                     }
 
                     location?.let { currentLoc ->
