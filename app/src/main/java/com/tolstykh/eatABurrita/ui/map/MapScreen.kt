@@ -45,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -87,6 +86,7 @@ import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.location.hasLocationPermission
 import com.tolstykh.eatABurrita.readablePlaceAddress
 import com.tolstykh.eatABurrita.ui.theme.LocalExColorScheme
+import com.tolstykh.eatABurrita.ui.theme.extendedLight
 import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -327,20 +327,20 @@ fun FullMapView(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(8.dp)
-                    .size(36.dp),
+                    .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = LocalExColorScheme.current.extra.iconBackground.copy(alpha = 0.6f)
+                    containerColor = extendedLight.extra.iconBackground.copy(alpha = 0.85f)
                 ),
                 elevation = ButtonDefaults.elevatedButtonElevation(
-                    defaultElevation = 12.dp,
+                    defaultElevation = 4.dp,
                 ),
-                shape = RectangleShape,
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = LocalExColorScheme.current.extra.iconTint
+                    tint = extendedLight.extra.iconTint
                 )
             }
             Button(
@@ -363,20 +363,20 @@ fun FullMapView(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 8.dp, top = 56.dp)
-                    .size(36.dp),
+                    .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = LocalExColorScheme.current.extra.iconBackground.copy(alpha = 0.6f)
+                    containerColor = extendedLight.extra.iconBackground.copy(alpha = 0.85f)
                 ),
                 elevation = ButtonDefaults.elevatedButtonElevation(
-                    defaultElevation = 12.dp,
+                    defaultElevation = 4.dp,
                 ),
-                shape = RectangleShape,
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Explore,
                     contentDescription = "Reset orientation",
-                    tint = LocalExColorScheme.current.extra.iconTint
+                    tint = extendedLight.extra.iconTint
                 )
             }
         }
