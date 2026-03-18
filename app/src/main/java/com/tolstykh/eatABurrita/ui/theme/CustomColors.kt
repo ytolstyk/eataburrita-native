@@ -24,7 +24,7 @@ val extendedDark = ExtendedColorScheme(
     extra = ColorFamily(
         iconTint = WhiteText,
         iconBackground = BlackText,
-        iconOutline = DarkIconOutline,
+        iconOutline = Orange,
     ),
 )
 val LocalExColorScheme = staticCompositionLocalOf { ExtendedColorScheme() }

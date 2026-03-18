@@ -397,8 +397,8 @@ fun CustomMarker(place: Place, latLng: LatLng, onPlaceSelected: (Place) -> Unit)
             painter = painterResource(id = R.drawable.burrito_icon),
             contentDescription = place.displayName,
             modifier = Modifier
-                .size(60.dp)
-                .border(6.dp, LocalExColorScheme.current.extra.iconOutline, shape = shape),
+                .size(48.dp)
+                .border(3.dp, LocalExColorScheme.current.extra.iconOutline, shape = shape),
         )
     }
 }
