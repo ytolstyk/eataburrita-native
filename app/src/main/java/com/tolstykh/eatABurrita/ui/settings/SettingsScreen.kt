@@ -1,5 +1,6 @@
 package com.tolstykh.eatABurrita.ui.settings
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,6 +55,7 @@ import com.tolstykh.eatABurrita.data.BurritoEntry
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import java.util.Calendar
 import java.util.TimeZone
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +65,7 @@ fun SettingsScreen(
 ) {
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     var showResetConfirm by rememberSaveable { mutableStateOf(false) }
     var isAddingEntry by rememberSaveable { mutableStateOf(false) }
@@ -188,6 +192,24 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(32.dp))
+
+        // Support
+        Text("Support", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        OutlinedButton(
+            onClick = {
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = "mailto:eataburrita@gmail.com".toUri()
+                    putExtra(Intent.EXTRA_SUBJECT, "Bug Report - Eat-a-Burrita")
+                }
+                context.startActivity(Intent.createChooser(intent, "Send bug report"))
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Report a Bug")
+        }
+
+        Spacer(Modifier.height(24.dp))
 
         // Danger zone
         Text("Danger Zone", style = MaterialTheme.typography.titleMedium, color = colorScheme.error)
