@@ -2,6 +2,7 @@ package com.tolstykh.eatABurrita.ui.main
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -57,6 +58,7 @@ import com.tolstykh.eatABurrita.formatDuration
 import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.location.hasLocationPermission
+import androidx.core.net.toUri
 import kotlinx.coroutines.delay
 import java.time.Instant
 
@@ -108,7 +110,12 @@ fun TimerScreen(
             )
             TotalBurritos(modifier = Modifier.padding(8.dp), burritoCount = data.burritoCount)
             LastBurritoDate(modifier = Modifier.padding(8.dp), lastTimestamp = data.lastTimestamp)
-            FavoritePlace(modifier = Modifier.padding(8.dp), placeName = data.favoritePlaceName)
+            FavoritePlace(
+                modifier = Modifier.padding(8.dp),
+                placeName = data.favoritePlaceName,
+                lat = data.favoritePlaceLat,
+                lng = data.favoritePlaceLng,
+            )
             Spacer(modifier = Modifier.height(24.dp))
             BurritoConsumptionChart(
                 modifier = Modifier
@@ -353,14 +360,27 @@ fun LastBurritoDate(modifier: Modifier = Modifier, lastTimestamp: Long = 0L) {
 }
 
 @Composable
-fun FavoritePlace(modifier: Modifier = Modifier, placeName: String?) {
+fun FavoritePlace(modifier: Modifier = Modifier, placeName: String?, lat: Double?, lng: Double?) {
     if (placeName == null) return
-    Text(
-        text = "Favorite place: $placeName",
-        fontSize = 18.sp,
-        lineHeight = 22.sp,
-        modifier = modifier,
-    )
+    val context = LocalContext.current
+    val canNavigate = lat != null && lng != null
+    Row(modifier = modifier) {
+        Text(
+            text = "Favorite place: ",
+            fontSize = 18.sp,
+            lineHeight = 22.sp,
+        )
+        Text(
+            text = placeName,
+            fontSize = 18.sp,
+            lineHeight = 22.sp,
+            color = colorScheme.tertiary,
+            modifier = if (canNavigate) Modifier.clickable {
+                val uri = "geo:$lat,$lng?q=$lat,$lng(${android.net.Uri.encode(placeName)})".toUri()
+                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+            } else Modifier,
+        )
+    }
 }
 
 @Composable

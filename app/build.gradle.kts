@@ -23,6 +23,11 @@ android {
         versionCode = 4
         versionName = "1.3"
 
+        val gitCommit = providers.exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.get().trim()
+        buildConfigField("String", "GIT_COMMIT_HASH", "\"$gitCommit\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

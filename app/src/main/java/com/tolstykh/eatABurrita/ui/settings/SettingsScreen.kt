@@ -248,6 +248,23 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
 
+        // About
+        Text("About", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Version", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "${BuildConfig.VERSION_NAME} (${BuildConfig.GIT_COMMIT_HASH})",
+                style = MaterialTheme.typography.bodyLarge,
+                color = colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+
         // Danger zone
         Text("Danger Zone", style = MaterialTheme.typography.titleMedium, color = colorScheme.error)
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -322,8 +339,6 @@ fun SettingsScreen(
             initialMinute = if (editingEntry != null) originalCal.get(Calendar.MINUTE)
                             else Calendar.getInstance().get(Calendar.MINUTE),
         )
-        // Capture before lambda to avoid stale closure issues
-        val isAdding = isAddingEntry
         AlertDialog(
             onDismissRequest = {
                 isAddingEntry = false
@@ -332,19 +347,12 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val newTimestamp = combineDateAndTime(
+                    pendingTimestamp = combineDateAndTime(
                         utcMidnightMillis = selectedDateMillis,
                         hour = timePickerState.hour,
                         minute = timePickerState.minute,
                     )
-                    if (isAdding) {
-                        viewModel.addEntry(newTimestamp)
-                        isAddingEntry = false
-                        editorStep = 1
-                    } else {
-                        pendingTimestamp = newTimestamp
-                        editorStep = 3
-                    }
+                    editorStep = 3
                 }) { Text("OK") }
             },
             dismissButton = {
@@ -358,27 +366,36 @@ fun SettingsScreen(
         )
     }
 
-    // Location edit (step 3) — edit only
-    val showLocationEdit = editingEntry != null && editorStep == 3
+    // Location edit (step 3) — for both add and edit
+    val showLocationEdit = (isAddingEntry || editingEntry != null) && editorStep == 3
     if (showLocationEdit) {
-        val entryToEdit = editingEntry
-        if (entryToEdit != null) {
-            LocationEditModal(
-                entry = entryToEdit,
-                newTimestamp = pendingTimestamp,
-                placesClient = placesClient,
-                onConfirm = { updatedEntry ->
+        val entryToEdit = editingEntry ?: BurritoEntry(timestamp = pendingTimestamp)
+        LocationEditModal(
+            entry = entryToEdit,
+            newTimestamp = pendingTimestamp,
+            placesClient = placesClient,
+            isNewEntry = isAddingEntry,
+            onConfirm = { updatedEntry ->
+                if (isAddingEntry) {
+                    viewModel.addEntry(updatedEntry)
+                    isAddingEntry = false
+                } else {
                     viewModel.updateEntry(updatedEntry)
                     editingEntry = null
-                    editorStep = 1
-                },
-                onDismiss = {
+                }
+                editorStep = 1
+            },
+            onDismiss = {
+                if (isAddingEntry) {
+                    viewModel.addEntry(BurritoEntry(timestamp = pendingTimestamp))
+                    isAddingEntry = false
+                } else {
                     viewModel.updateEntry(entryToEdit.copy(timestamp = pendingTimestamp))
                     editingEntry = null
-                    editorStep = 1
-                },
-            )
-        }
+                }
+                editorStep = 1
+            },
+        )
     }
 }
 

@@ -30,6 +30,8 @@ data class TimeScreenData(
     val lastTimestamp: Long,
     val dailyCounts: List<Int>,
     val favoritePlaceName: String? = null,
+    val favoritePlaceLat: Double? = null,
+    val favoritePlaceLng: Double? = null,
 )
 
 @HiltViewModel
@@ -48,11 +50,14 @@ class TimeScreenViewModel @Inject constructor(
             dao.getEntriesSince(thirtyDaysAgo),
             dao.getEntriesWithLocation(),
         ) { count, lastTs, entries, locationEntries ->
+            val (favName, favLat, favLng) = buildFavoritePlace(locationEntries)
             TimeScreenData(
                 burritoCount = count,
                 lastTimestamp = lastTs ?: 0L,
                 dailyCounts = buildDailyCounts(entries),
-                favoritePlaceName = buildFavoritePlace(locationEntries),
+                favoritePlaceName = favName,
+                favoritePlaceLat = favLat,
+                favoritePlaceLng = favLng,
             )
         }
             .map<TimeScreenData, TimeScreenUIState>(TimeScreenUIState::Success)
@@ -138,13 +143,16 @@ class TimeScreenViewModel @Inject constructor(
         _dayLocationModal.value = null
     }
 
-    private fun buildFavoritePlace(entries: List<BurritoEntry>): String? =
-        entries
+    private fun buildFavoritePlace(entries: List<BurritoEntry>): Triple<String?, Double?, Double?> {
+        val favoriteName = entries
             .mapNotNull { it.locationName }
             .groupingBy { it }
             .eachCount()
             .maxByOrNull { it.value }
-            ?.key
+            ?.key ?: return Triple(null, null, null)
+        val entry = entries.first { it.locationName == favoriteName }
+        return Triple(favoriteName, entry.locationLat, entry.locationLong)
+    }
 
     private fun buildDailyCounts(entries: List<BurritoEntry>): List<Int> {
         val zone = ZoneId.systemDefault()

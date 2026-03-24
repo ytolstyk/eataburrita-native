@@ -47,6 +47,7 @@ fun LocationEditModal(
     placesClient: PlacesClient,
     onConfirm: (BurritoEntry) -> Unit,
     onDismiss: () -> Unit,
+    isNewEntry: Boolean = false,
 ) {
     var searchText by remember { mutableStateOf(entry.locationName ?: "") }
     val predictions = remember { mutableStateListOf<com.google.android.libraries.places.api.model.AutocompletePrediction>() }
@@ -87,7 +88,10 @@ fun LocationEditModal(
             color = colorScheme.surface,
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Edit location", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    if (isNewEntry) "Add location" else "Edit location",
+                    style = MaterialTheme.typography.titleLarge,
+                )
                 Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
@@ -168,7 +172,7 @@ fun LocationEditModal(
                     onClick = { onConfirm(entry.copy(timestamp = newTimestamp)) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Keep existing location")
+                    Text(if (isNewEntry) "Save without location" else "Keep existing location")
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 TextButton(

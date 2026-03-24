@@ -35,8 +35,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { appPrefs.setShowLocationModal(show) }
     }
 
-    fun addEntry(timestamp: Long) {
-        viewModelScope.launch { dao.insert(BurritoEntry(timestamp = timestamp)) }
+    fun addEntry(entry: BurritoEntry) {
+        viewModelScope.launch { dao.insert(entry) }
     }
 
     fun updateEntry(entry: BurritoEntry) {
