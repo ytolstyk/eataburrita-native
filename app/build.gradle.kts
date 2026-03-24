@@ -5,7 +5,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.secrets.gradle.plugin)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt.gradle)
     alias(libs.plugins.ksp)
     kotlin("plugin.serialization") version "2.0.21"
@@ -52,6 +51,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
+            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
         }
     }
 
@@ -86,8 +86,7 @@ dependencies {
     implementation(libs.places)
 
     // Annotation processor
-    kapt(libs.androidx.lifecycle.compiler)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     implementation(libs.accompanist.permissions)
     implementation(libs.androidx.hilt.navigation.compose)
