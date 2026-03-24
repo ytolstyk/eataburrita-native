@@ -2,6 +2,7 @@ package com.tolstykh.eatABurrita.ui.map
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import android.util.Log
 import androidx.compose.animation.slideInVertically
@@ -329,12 +330,19 @@ fun FullMapView(
                         currentPosition = currentPosition,
                         burritoCount = stats?.count ?: 0,
                         lastTimestampAtPlace = stats?.lastTimestamp,
-                        onNavigate = {
-                            val uri =
-                                "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${currentPosition.latitude},${currentPosition.longitude}&destination=${place.location?.latitude},${place.location?.longitude}".toUri()
-                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                            if (intent.resolveActivity(context.packageManager) != null) {
-                                context.startActivity(intent)
+                        onNavigate = run {
+                            val location = place.location
+                            val name = place.displayName
+                            val uriString = when {
+                                location != null -> "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${currentPosition.latitude},${currentPosition.longitude}&destination=${location.latitude},${location.longitude}"
+                                name != null -> "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${Uri.encode(name)}"
+                                else -> null
+                            }
+                            uriString?.let { s ->
+                                val intent = Intent(Intent.ACTION_VIEW, s.toUri())
+                                if (intent.resolveActivity(context.packageManager) != null) {
+                                    { context.startActivity(intent) }
+                                } else null
                             }
                         }
                     )
@@ -498,7 +506,7 @@ fun PlaceBottomTray(
     currentPosition: LatLng,
     burritoCount: Int = 0,
     lastTimestampAtPlace: Long? = null,
-    onNavigate: () -> Unit,
+    onNavigate: (() -> Unit)?,
 ) {
     val address = readablePlaceAddress(place.addressComponents)
     Surface(
@@ -547,14 +555,16 @@ fun PlaceBottomTray(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onNavigate,
-                shape = CircleShape,
-                modifier = Modifier.height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary)
-            ) {
-                Text("Navigate", fontSize = 18.dp.value.sp, color = colorScheme.onSecondary)
+            if (onNavigate != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onNavigate,
+                    shape = CircleShape,
+                    modifier = Modifier.height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary)
+                ) {
+                    Text("Navigate", fontSize = 18.dp.value.sp, color = colorScheme.onSecondary)
+                }
             }
         }
     }
