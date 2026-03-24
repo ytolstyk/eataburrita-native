@@ -238,6 +238,10 @@ fun SettingsScreen(
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                     data = "mailto:eataburrita@gmail.com".toUri()
                     putExtra(Intent.EXTRA_SUBJECT, "Bug Report - Eat-a-Burrita")
+                    putExtra(
+                        Intent.EXTRA_TEXT,
+                        "Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.GIT_COMMIT_HASH})\n\n",
+                    )
                 }
                 context.startActivity(Intent.createChooser(intent, "Send bug report"))
             },
