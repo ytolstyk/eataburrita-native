@@ -24,8 +24,15 @@ class SettingsViewModel @Inject constructor(
     val isDarkMode: StateFlow<Boolean> = appPrefs.isDarkMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val showLocationModal: StateFlow<Boolean> = appPrefs.showLocationModal
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun toggleDarkMode(dark: Boolean) {
         viewModelScope.launch { appPrefs.setDarkMode(dark) }
+    }
+
+    fun toggleLocationModal(show: Boolean) {
+        viewModelScope.launch { appPrefs.setShowLocationModal(show) }
     }
 
     fun addEntry(timestamp: Long) {

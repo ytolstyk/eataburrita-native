@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -85,6 +88,7 @@ import com.tolstykh.eatABurrita.R
 import com.tolstykh.eatABurrita.helpers.distanceBetweenInMiles
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.location.hasLocationPermission
+import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.readablePlaceAddress
 import com.tolstykh.eatABurrita.ui.theme.LocalExColorScheme
 import com.tolstykh.eatABurrita.ui.theme.extendedLight
@@ -105,6 +109,7 @@ fun MapScreen(
         )
     )
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+    val placeStats by viewModel.placeStats.collectAsStateWithLifecycle()
 
     Surface {
         LaunchedEffect(!context.hasLocationPermission()) {
@@ -187,7 +192,10 @@ fun MapScreen(
                         FullMapView(
                             currentPosition = currentLoc,
                             cameraState = cameraState,
-                            onBackPressed = onBackPressed
+                            onBackPressed = onBackPressed,
+                            placeStats = placeStats,
+                            getBurritoCount = viewModel::getBurritoCountForPlace,
+                            getPlaceStats = viewModel::getPlaceStatsForPlace,
                         )
                     }
                 }
@@ -201,6 +209,9 @@ fun FullMapView(
     currentPosition: LatLng,
     cameraState: CameraPositionState,
     onBackPressed: () -> Unit = {},
+    placeStats: Map<String, MapScreenViewModel.PlaceStats> = emptyMap(),
+    getBurritoCount: (Place, Map<String, MapScreenViewModel.PlaceStats>) -> Int = { _, _ -> 0 },
+    getPlaceStats: (Place, Map<String, MapScreenViewModel.PlaceStats>) -> MapScreenViewModel.PlaceStats? = { _, _ -> null },
 ) {
     val marker = LatLng(currentPosition.latitude, currentPosition.longitude)
     val markerState = remember {
@@ -299,6 +310,7 @@ fun FullMapView(
                         CustomMarker(
                             place = place,
                             latLng = latLng,
+                            burritoCount = getBurritoCount(place, placeStats),
                             onPlaceSelected = { selectedPlace = it }
                         )
                     }
@@ -311,9 +323,12 @@ fun FullMapView(
                 exit = slideOutVertically { it }
             ) {
                 selectedPlace?.let { place ->
+                    val stats = getPlaceStats(place, placeStats)
                     PlaceBottomTray(
                         place = place,
                         currentPosition = currentPosition,
+                        burritoCount = stats?.count ?: 0,
+                        lastTimestampAtPlace = stats?.lastTimestamp,
                         onNavigate = {
                             val uri =
                                 "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${currentPosition.latitude},${currentPosition.longitude}&destination=${place.location?.latitude},${place.location?.longitude}".toUri()
@@ -433,7 +448,12 @@ fun FullMapView(
 }
 
 @Composable
-fun CustomMarker(place: Place, latLng: LatLng, onPlaceSelected: (Place) -> Unit) {
+fun CustomMarker(
+    place: Place,
+    latLng: LatLng,
+    burritoCount: Int = 0,
+    onPlaceSelected: (Place) -> Unit,
+) {
     val shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 0.dp)
 
     MarkerComposable(
@@ -442,13 +462,33 @@ fun CustomMarker(place: Place, latLng: LatLng, onPlaceSelected: (Place) -> Unit)
         anchor = Offset(0f, 1f),
         onClick = { onPlaceSelected(place); true }
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.burrito_icon),
-            contentDescription = place.displayName,
-            modifier = Modifier
-                .size(48.dp)
-                .border(3.dp, LocalExColorScheme.current.extra.iconOutline, shape = shape),
-        )
+        Box(contentAlignment = Alignment.TopEnd) {
+            Image(
+                painter = painterResource(id = R.drawable.burrito_icon),
+                contentDescription = place.displayName,
+                modifier = Modifier
+                    .size(48.dp)
+                    .border(3.dp, LocalExColorScheme.current.extra.iconOutline, shape = shape),
+            )
+            if (burritoCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = 5.dp, y = (-5).dp)
+                        .size(24.dp)
+                        .background(colorScheme.error, shape = CircleShape)
+                        .border(1.5.dp, colorScheme.onError, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (burritoCount > 9) "9+" else burritoCount.toString(),
+                        color = colorScheme.onError,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 12.sp,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -456,7 +496,9 @@ fun CustomMarker(place: Place, latLng: LatLng, onPlaceSelected: (Place) -> Unit)
 fun PlaceBottomTray(
     place: Place,
     currentPosition: LatLng,
-    onNavigate: () -> Unit
+    burritoCount: Int = 0,
+    lastTimestampAtPlace: Long? = null,
+    onNavigate: () -> Unit,
 ) {
     val address = readablePlaceAddress(place.addressComponents)
     Surface(
@@ -489,6 +531,21 @@ fun PlaceBottomTray(
                     style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onPrimary,
                 )
+            }
+            if (burritoCount > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "$burritoCount ${if (burritoCount == 1) "burrito" else "burritos"} eaten here",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onPrimary,
+                )
+                lastTimestampAtPlace?.let { ts ->
+                    Text(
+                        text = "Last visit: ${dateFromMilliseconds(ts)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onPrimary.copy(alpha = 0.8f),
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(

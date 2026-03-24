@@ -35,4 +35,10 @@ interface BurritoDao {
 
     @Query("DELETE FROM burrito_entries")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM burrito_entries WHERE locationLat IS NOT NULL ORDER BY timestamp DESC")
+    fun getEntriesWithLocation(): Flow<List<BurritoEntry>>
+
+    @Query("SELECT * FROM burrito_entries WHERE timestamp >= :dayStart AND timestamp < :dayEnd AND locationLat IS NOT NULL ORDER BY timestamp ASC")
+    suspend fun getEntriesWithLocationForDay(dayStart: Long, dayEnd: Long): List<BurritoEntry>
 }

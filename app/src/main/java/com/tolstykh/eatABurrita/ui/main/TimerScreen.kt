@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,6 +56,7 @@ import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
 import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
+import com.tolstykh.eatABurrita.location.hasLocationPermission
 import kotlinx.coroutines.delay
 import java.time.Instant
 
@@ -64,6 +67,10 @@ fun TimerScreen(
     onOpenSettings: () -> Unit,
 ) {
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
+    val locationPickerOpen by viewModel.locationPickerOpen.collectAsStateWithLifecycle()
+    val currentLocation by viewModel.currentUserLocation.collectAsStateWithLifecycle()
+    val dayLocationModal by viewModel.dayLocationModal.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     if (uiState is TimeScreenViewModel.TimeScreenUIState.Loading) {
         Box(
@@ -101,6 +108,7 @@ fun TimerScreen(
             )
             TotalBurritos(modifier = Modifier.padding(8.dp), burritoCount = data.burritoCount)
             LastBurritoDate(modifier = Modifier.padding(8.dp), lastTimestamp = data.lastTimestamp)
+            FavoritePlace(modifier = Modifier.padding(8.dp), placeName = data.favoritePlaceName)
             Spacer(modifier = Modifier.height(24.dp))
             BurritoConsumptionChart(
                 modifier = Modifier
@@ -108,6 +116,7 @@ fun TimerScreen(
                     .height(100.dp)
                     .padding(horizontal = 24.dp),
                 dailyCounts = data.dailyCounts,
+                onDayClick = { dayIndex -> viewModel.onChartDayClicked(dayIndex) },
             )
             Spacer(modifier = Modifier.height(48.dp))
             Row(
@@ -116,7 +125,7 @@ fun TimerScreen(
             ) {
                 MapButton(onClick = onOpenMap)
                 EatButton(
-                    onClick = viewModel::addBurrito
+                    onClick = viewModel::requestAddBurrito
                 )
                 Share(
                     context = LocalContext.current,
@@ -136,18 +145,57 @@ fun TimerScreen(
         Icon(Icons.Default.Settings, contentDescription = "Settings", tint = colorScheme.onBackground)
     }
     } // end Box
+
+    if (locationPickerOpen) {
+        LocationPickerModal(
+            currentLocation = currentLocation,
+            hasLocationPermission = context.hasLocationPermission(),
+            onConfirm = { name, lat, lng -> viewModel.confirmAddBurrito(name, lat, lng) },
+            onCancel = { viewModel.cancelAddBurrito() },
+            onDontShowAgain = { viewModel.disableLocationModal() },
+        )
+    }
+
+    dayLocationModal?.let { dayData ->
+        DayLocationModal(
+            data = dayData,
+            onDismiss = { viewModel.dismissDayLocationModal() },
+        )
+    }
 }
 
 @Composable
 fun BurritoConsumptionChart(
     modifier: Modifier = Modifier,
     dailyCounts: List<Int>,
+    onDayClick: ((Int) -> Unit)? = null,
 ) {
     val primaryColor = colorScheme.primary
     val barBackground = colorScheme.surfaceVariant
 
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Canvas(modifier = Modifier.fillMaxWidth().weight(1f)) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .then(
+                    if (onDayClick != null) {
+                        Modifier.pointerInput(dailyCounts) {
+                            detectTapGestures { offset ->
+                                val barCount = dailyCounts.size
+                                if (barCount == 0) return@detectTapGestures
+                                val gap = 2.dp.toPx()
+                                val barWidth = (size.width - gap * (barCount - 1)) / barCount
+                                val rawIndex = (offset.x / (barWidth + gap)).toInt()
+                                val clampedIndex = rawIndex.coerceIn(0, barCount - 1)
+                                if (dailyCounts[clampedIndex] > 0) {
+                                    onDayClick(clampedIndex)
+                                }
+                            }
+                        }
+                    } else Modifier
+                )
+        ) {
             val maxCount = dailyCounts.maxOrNull()?.coerceAtLeast(1) ?: 1
             val barCount = dailyCounts.size
             val gap = 2.dp.toPx()
@@ -298,6 +346,17 @@ fun LastBurritoDate(modifier: Modifier = Modifier, lastTimestamp: Long = 0L) {
 
     Text(
         text = "Last burrito: ${dateFromMilliseconds(lastTimestamp)}",
+        fontSize = 18.sp,
+        lineHeight = 22.sp,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun FavoritePlace(modifier: Modifier = Modifier, placeName: String?) {
+    if (placeName == null) return
+    Text(
+        text = "Favorite place: $placeName",
         fontSize = 18.sp,
         lineHeight = 22.sp,
         modifier = modifier,

@@ -48,9 +48,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.android.libraries.places.api.Places
+import com.tolstykh.eatABurrita.BuildConfig
 import com.tolstykh.eatABurrita.data.BurritoEntry
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import java.util.Calendar
@@ -65,15 +68,24 @@ fun SettingsScreen(
 ) {
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+    val showLocationModal by viewModel.showLocationModal.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val placesClient = remember {
+        if (!Places.isInitialized()) {
+            Places.initializeWithNewPlacesApiEnabled(context, BuildConfig.MAPS_API_KEY)
+        }
+        Places.createClient(context)
+    }
 
     var showResetConfirm by rememberSaveable { mutableStateOf(false) }
     var isAddingEntry by rememberSaveable { mutableStateOf(false) }
     var editingEntry by remember { mutableStateOf<BurritoEntry?>(null) }
-    // editorStep: 1 = date picker, 2 = time picker
+    // editorStep: 1 = date picker, 2 = time picker, 3 = location edit (edit-only)
     var editorStep by rememberSaveable { mutableIntStateOf(1) }
     // selectedDateMillis holds UTC-midnight date millis after date picker confirms
     var selectedDateMillis by rememberSaveable { mutableLongStateOf(System.currentTimeMillis()) }
+    // pendingTimestamp holds the resolved timestamp after time picker, before location edit
+    var pendingTimestamp by rememberSaveable { mutableLongStateOf(0L) }
 
     var currentPage by rememberSaveable { mutableIntStateOf(0) }
     val pageSize = 30
@@ -113,6 +125,20 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
 
+        // Location
+        Text("Location", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Show location modal when eating", style = MaterialTheme.typography.bodyLarge)
+            Switch(checked = showLocationModal, onCheckedChange = viewModel::toggleLocationModal)
+        }
+
+        Spacer(Modifier.height(24.dp))
+
         // Entries
         Text("Entries", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -137,11 +163,22 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = dateFromMilliseconds(entry.timestamp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = dateFromMilliseconds(entry.timestamp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                            )
+                            if (entry.locationName != null) {
+                                Text(
+                                    text = entry.locationName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                         IconButton(onClick = {
                             editingEntry = entry
                             selectedDateMillis = entry.timestamp
@@ -287,7 +324,6 @@ fun SettingsScreen(
         )
         // Capture before lambda to avoid stale closure issues
         val isAdding = isAddingEntry
-        val entryToEdit = editingEntry
         AlertDialog(
             onDismissRequest = {
                 isAddingEntry = false
@@ -303,12 +339,12 @@ fun SettingsScreen(
                     )
                     if (isAdding) {
                         viewModel.addEntry(newTimestamp)
+                        isAddingEntry = false
+                        editorStep = 1
                     } else {
-                        entryToEdit?.let { viewModel.updateEntry(it.copy(timestamp = newTimestamp)) }
+                        pendingTimestamp = newTimestamp
+                        editorStep = 3
                     }
-                    isAddingEntry = false
-                    editingEntry = null
-                    editorStep = 1
                 }) { Text("OK") }
             },
             dismissButton = {
@@ -320,6 +356,29 @@ fun SettingsScreen(
             },
             text = { TimePicker(state = timePickerState) },
         )
+    }
+
+    // Location edit (step 3) — edit only
+    val showLocationEdit = editingEntry != null && editorStep == 3
+    if (showLocationEdit) {
+        val entryToEdit = editingEntry
+        if (entryToEdit != null) {
+            LocationEditModal(
+                entry = entryToEdit,
+                newTimestamp = pendingTimestamp,
+                placesClient = placesClient,
+                onConfirm = { updatedEntry ->
+                    viewModel.updateEntry(updatedEntry)
+                    editingEntry = null
+                    editorStep = 1
+                },
+                onDismiss = {
+                    viewModel.updateEntry(entryToEdit.copy(timestamp = pendingTimestamp))
+                    editingEntry = null
+                    editorStep = 1
+                },
+            )
+        }
     }
 }
 
