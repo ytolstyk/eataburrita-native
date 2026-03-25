@@ -179,7 +179,7 @@ fun LocationPickerModal(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
                 ) {
-                    TextButton(onClick = onCancel) { Text("Cancel") }
+                    TextButton(onClick = onCancel) { Text("Skip") }
                     Spacer(modifier = Modifier.padding(horizontal = 4.dp))
                     val canConfirm = if (hasLocationPermission) {
                         selectedPlace != null || nearbyPlaces.isEmpty()
