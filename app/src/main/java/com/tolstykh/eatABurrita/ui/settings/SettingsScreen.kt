@@ -38,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.SelectableDates
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -309,7 +310,14 @@ fun SettingsScreen(
     val showDatePicker = (isAddingEntry || editingEntry != null) && editorStep == 1
     if (showDatePicker) {
         val initialUtcMillis = normalizeToUtcMidnight(selectedDateMillis)
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialUtcMillis)
+        val todayUtcMidnight = normalizeToUtcMidnight(System.currentTimeMillis())
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialUtcMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis <= todayUtcMidnight
+            },
+        )
         DatePickerDialog(
             onDismissRequest = {
                 isAddingEntry = false
@@ -350,14 +358,22 @@ fun SettingsScreen(
                 editorStep = 1
             },
             confirmButton = {
-                TextButton(onClick = {
-                    pendingTimestamp = combineDateAndTime(
-                        utcMidnightMillis = selectedDateMillis,
-                        hour = timePickerState.hour,
-                        minute = timePickerState.minute,
-                    )
-                    editorStep = 3
-                }) { Text("OK") }
+                val isTimeFuture = combineDateAndTime(
+                    utcMidnightMillis = selectedDateMillis,
+                    hour = timePickerState.hour,
+                    minute = timePickerState.minute,
+                ) > System.currentTimeMillis()
+                TextButton(
+                    enabled = !isTimeFuture,
+                    onClick = {
+                        pendingTimestamp = combineDateAndTime(
+                            utcMidnightMillis = selectedDateMillis,
+                            hour = timePickerState.hour,
+                            minute = timePickerState.minute,
+                        )
+                        editorStep = 3
+                    },
+                ) { Text("OK") }
             },
             dismissButton = {
                 TextButton(onClick = {
@@ -404,13 +420,18 @@ fun SettingsScreen(
 }
 
 private fun normalizeToUtcMidnight(millis: Long): Long {
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-    cal.timeInMillis = millis
-    cal.set(Calendar.HOUR_OF_DAY, 0)
-    cal.set(Calendar.MINUTE, 0)
-    cal.set(Calendar.SECOND, 0)
-    cal.set(Calendar.MILLISECOND, 0)
-    return cal.timeInMillis
+    // Read date fields in local timezone so "today" matches the phone's clock,
+    // then write them into a UTC calendar (date picker stores dates as UTC midnight).
+    val localCal = Calendar.getInstance().apply { timeInMillis = millis }
+    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        set(Calendar.YEAR, localCal.get(Calendar.YEAR))
+        set(Calendar.MONTH, localCal.get(Calendar.MONTH))
+        set(Calendar.DAY_OF_MONTH, localCal.get(Calendar.DAY_OF_MONTH))
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
 }
 
 private fun combineDateAndTime(utcMidnightMillis: Long, hour: Int, minute: Int): Long {
