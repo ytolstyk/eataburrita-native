@@ -12,6 +12,7 @@ plugins {
 
 android {
     namespace = "com.tolstykh.eatABurrita"
+    ndkVersion = "27.2.12479018"
     compileSdk {
         version = release(36)
     }
