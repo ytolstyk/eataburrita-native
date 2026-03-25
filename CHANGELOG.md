@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.8] - 2026-03-25
+
+### Fixed
+- App crash for users with many burrito entries per day when opening the day modal
+- Day modal now caps displayed entries at 10 to prevent layout overflow
+- Day modal total count now includes all entries for the day, not just those with locations
+- Day modal no longer leaves blank space when there are no location entries to show
+
+### Changed
+- Day modal count text is larger and easier to read
+
 ## [1.7] - 2026-03-24
 
 ### Changed
