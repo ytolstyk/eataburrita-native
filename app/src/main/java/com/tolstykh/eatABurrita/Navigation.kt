@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import com.tolstykh.eatABurrita.ui.main.TimerScreen
 import com.tolstykh.eatABurrita.ui.map.MapScreen
 import com.tolstykh.eatABurrita.ui.settings.SettingsScreen
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -45,10 +46,13 @@ fun Navigation(
 }
 
 @Serializable
+@SerialName("Home")
 data object Home
 
 @Serializable
+@SerialName("Map")
 data object Map
 
 @Serializable
+@SerialName("Settings")
 data object Settings
