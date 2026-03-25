@@ -130,10 +130,12 @@ class TimeScreenViewModel @Inject constructor(
             val dayStart = clickedDate.atStartOfDay(zone).toInstant().toEpochMilli()
             val dayEnd = clickedDate.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
             val entries = dao.getEntriesWithLocationForDay(dayStart, dayEnd)
-            if (entries.isNotEmpty()) {
+            val totalCount = dao.getCountForDay(dayStart, dayEnd)
+            if (totalCount > 0) {
                 _dayLocationModal.value = DayLocationData(
                     dateLabel = clickedDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy")),
-                    entries = entries,
+                    entries = entries.take(10),
+                    totalCount = totalCount,
                 )
             }
         }
@@ -169,6 +171,7 @@ class TimeScreenViewModel @Inject constructor(
     data class DayLocationData(
         val dateLabel: String,
         val entries: List<BurritoEntry>,
+        val totalCount: Int,
     )
 
     sealed interface TimeScreenUIState {

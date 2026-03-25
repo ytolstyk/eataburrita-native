@@ -41,4 +41,7 @@ interface BurritoDao {
 
     @Query("SELECT * FROM burrito_entries WHERE timestamp >= :dayStart AND timestamp < :dayEnd AND locationLat IS NOT NULL ORDER BY timestamp ASC")
     suspend fun getEntriesWithLocationForDay(dayStart: Long, dayEnd: Long): List<BurritoEntry>
+
+    @Query("SELECT COUNT(*) FROM burrito_entries WHERE timestamp >= :dayStart AND timestamp < :dayEnd")
+    suspend fun getCountForDay(dayStart: Long, dayEnd: Long): Int
 }

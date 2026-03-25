@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -43,50 +44,59 @@ fun DayLocationModal(
             shape = RoundedCornerShape(16.dp),
             color = colorScheme.surface,
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(20.dp).heightIn(max = 480.dp)) {
                 Text(
                     "Burrito locations on ${data.dateLabel}",
                     style = MaterialTheme.typography.titleLarge,
                 )
+                Text(
+                    text = if (data.totalCount > data.entries.size)
+                        "${data.totalCount} burritos (showing ${data.entries.size})"
+                    else
+                        "${data.totalCount} burrito${if (data.totalCount == 1) "" else "s"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant,
+                )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    items(data.entries) { entry ->
-                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                            Text(
-                                text = entry.locationName ?: "Unknown location",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
+                if (data.entries.isNotEmpty()) {
+                    LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                        items(data.entries) { entry ->
+                            Column(modifier = Modifier.padding(vertical = 8.dp)) {
                                 Text(
-                                    text = dateFromMilliseconds(entry.timestamp),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.weight(1f),
+                                    text = entry.locationName ?: "Unknown location",
+                                    style = MaterialTheme.typography.bodyMedium,
                                 )
-                                val lat = entry.locationLat
-                                val lng = entry.locationLong
-                                if (lat != null && lng != null) {
-                                    TextButton(
-                                        onClick = {
-                                            val name = entry.locationName ?: ""
-                                            val uri = "geo:$lat,$lng?q=$lat,$lng($name)".toUri()
-                                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                                        },
-                                    ) {
-                                        Text("Navigate")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = dateFromMilliseconds(entry.timestamp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    val lat = entry.locationLat
+                                    val lng = entry.locationLong
+                                    if (lat != null && lng != null) {
+                                        TextButton(
+                                            onClick = {
+                                                val name = entry.locationName ?: ""
+                                                val uri = "geo:$lat,$lng?q=$lat,$lng($name)".toUri()
+                                                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                            },
+                                        ) {
+                                            Text("Navigate")
+                                        }
                                     }
                                 }
                             }
+                            HorizontalDivider(thickness = 0.5.dp, color = colorScheme.outlineVariant)
                         }
-                        HorizontalDivider(thickness = 0.5.dp, color = colorScheme.outlineVariant)
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End),
