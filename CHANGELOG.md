@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7] - 2026-03-24
+
+### Changed
+- Restricted future date selection when logging a burrito
+
+## [1.6] - 2026-03-24
+
+### Changed
+- Version bump
+
+## [1.5] - 2026-03-24
+
+### Added
+- Debug symbol table in release builds
+
 ## [1.4] - 2026-03-24
 
 ### Added
