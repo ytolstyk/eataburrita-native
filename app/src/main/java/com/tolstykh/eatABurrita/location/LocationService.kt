@@ -28,30 +28,30 @@ class LocationService @Inject constructor(
 
         if (!context.hasLocationPermission()) {
             trySend(null)
-            return@callbackFlow
-        }
+            close()
+        } else {
+            val request = LocationRequest.Builder(10000L)
+                .setIntervalMillis(10000L)
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                .build()
 
-        val request = LocationRequest.Builder(10000L)
-            .setIntervalMillis(10000L)
-            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-            .build()
-
-        val locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                locationResult.locations.lastOrNull()?.let {
-                    trySend(LatLng(it.latitude, it.longitude))
+            val locationCallback = object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    locationResult.locations.lastOrNull()?.let {
+                        trySend(LatLng(it.latitude, it.longitude))
+                    }
                 }
             }
-        }
 
-        locationClient.requestLocationUpdates(
-            request,
-            locationCallback,
-            Looper.getMainLooper()
-        )
+            locationClient.requestLocationUpdates(
+                request,
+                locationCallback,
+                Looper.getMainLooper()
+            )
 
-        awaitClose {
-            locationClient.removeLocationUpdates(locationCallback)
+            awaitClose {
+                locationClient.removeLocationUpdates(locationCallback)
+            }
         }
     }
 
