@@ -16,10 +16,13 @@ The answer is displayed prominently, in large text, ticking away second by secon
 A live countdown (count-up?) showing exactly how long it has been since your last burrito. Days. Hours. Minutes. Seconds. No escape.
 
 ### 🌯 The Button
-A big, satisfying **"Eat!"** button. Press it when you eat a burrito. That's it. That's the whole thing.
+A big, satisfying **"Eat!"** button. Press it when you eat a burrito. Optionally tag the location so you remember where the good ones happened.
 
 ### 📊 The Chart
-A 30-day bar chart of your burrito consumption history. Are you trending up? Down? Erratic? The chart knows. The chart judges silently.
+A 30-day bar chart of your burrito consumption history. Are you trending up? Down? Erratic? The chart knows. The chart judges silently. Tap any bar to see which locations you visited that day.
+
+### 📍 Favorite Place
+The app tracks where you eat most often and surfaces your favorite burrito spot right on the home screen — tappable, for when you need to go back immediately.
 
 ### 🗺️ The Map
 Can't find a burrito? We've got you. The map screen finds nearby Mexican restaurants and marks them with little burrito icons so you can solve your problem immediately.
@@ -31,11 +34,19 @@ Tap it to generate a deeply unnecessary but statistically accurate update for yo
 
 Your friends may not care. Share anyway.
 
+### 🔔 Reminders
+Gone three days without a burrito? The app will remind you. Seven days? It gets more concerned. Notifications are gentle but persistent, like a good friend who also loves burritos.
+
+### ⚙️ Settings
+Dark mode, notification toggles, location modal preferences, full entry history with edit/delete, and a reset button for when you want to pretend none of this happened.
+
 ## Tech Stack
 
 - **Kotlin** — because Java is a lot of words
 - **Jetpack Compose** — UI that actually enjoys being written
 - **Room** — every burrito click persisted forever, no burrito forgotten
+- **DataStore** — lightweight preferences for settings and flags
+- **WorkManager** — periodic reminders running quietly in the background
 - **Hilt** — dependency injection, the responsible way
 - **Google Maps + Places API** — the burrito locator
 - **Material 3** — orange and purple, naturally
