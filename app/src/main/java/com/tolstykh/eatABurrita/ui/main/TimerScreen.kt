@@ -64,9 +64,13 @@ import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.location.hasLocationPermission
 import androidx.core.net.toUri
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.delay
 import java.time.Instant
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun TimerScreen(
     viewModel: TimeScreenViewModel = hiltViewModel(),
@@ -78,6 +82,14 @@ fun TimerScreen(
     val currentLocation by viewModel.currentUserLocation.collectAsStateWithLifecycle()
     val dayLocationModal by viewModel.dayLocationModal.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val notificationPermissionAsked by viewModel.notificationPermissionAsked.collectAsStateWithLifecycle()
+    val notificationPermissionState = rememberPermissionState(android.Manifest.permission.POST_NOTIFICATIONS)
+    LaunchedEffect(notificationPermissionAsked) {
+        if (!notificationPermissionAsked && !notificationPermissionState.status.isGranted) {
+            notificationPermissionState.launchPermissionRequest()
+            viewModel.markNotificationPermissionAsked()
+        }
+    }
     var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {

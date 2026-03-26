@@ -27,12 +27,19 @@ class SettingsViewModel @Inject constructor(
     val showLocationModal: StateFlow<Boolean> = appPrefs.showLocationModal
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val notificationsEnabled: StateFlow<Boolean> = appPrefs.notificationsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun toggleDarkMode(dark: Boolean) {
         viewModelScope.launch { appPrefs.setDarkMode(dark) }
     }
 
     fun toggleLocationModal(show: Boolean) {
         viewModelScope.launch { appPrefs.setShowLocationModal(show) }
+    }
+
+    fun toggleNotifications(enabled: Boolean) {
+        viewModelScope.launch { appPrefs.setNotificationsEnabled(enabled) }
     }
 
     fun addEntry(entry: BurritoEntry) {

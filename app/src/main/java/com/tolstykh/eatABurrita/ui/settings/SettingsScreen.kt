@@ -1,6 +1,8 @@
 package com.tolstykh.eatABurrita.ui.settings
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +42,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.SelectableDates
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -47,6 +50,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,7 +65,9 @@ import com.tolstykh.eatABurrita.data.BurritoEntry
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import java.util.Calendar
 import java.util.TimeZone
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import com.tolstykh.eatABurrita.notification.BurritoNotificationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +78,27 @@ fun SettingsScreen(
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val showLocationModal by viewModel.showLocationModal.collectAsStateWithLifecycle()
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showNotificationPermissionDialog by rememberSaveable { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var notificationPermissionGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                notificationPermissionGranted = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val notificationsToggleOn = notificationsEnabled && notificationPermissionGranted
     val placesClient = remember {
         if (!Places.isInitialized()) {
             Places.initializeWithNewPlacesApiEnabled(context, BuildConfig.MAPS_API_KEY)
@@ -136,6 +164,62 @@ fun SettingsScreen(
         ) {
             Text("Show location modal when eating", style = MaterialTheme.typography.bodyLarge)
             Switch(checked = showLocationModal, onCheckedChange = viewModel::toggleLocationModal)
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Notifications
+        Text("Notifications", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Burrito reminders", style = MaterialTheme.typography.bodyLarge)
+            Switch(
+                checked = notificationsToggleOn,
+                onCheckedChange = { enabled ->
+                    if (enabled) {
+                        val granted = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (granted) {
+                            viewModel.toggleNotifications(true)
+                            BurritoNotificationManager.sendThreeDayReminder(context)
+                        } else {
+                            showNotificationPermissionDialog = true
+                        }
+                    } else {
+                        viewModel.toggleNotifications(false)
+                    }
+                }
+            )
+        }
+
+        if (showNotificationPermissionDialog) {
+            AlertDialog(
+                onDismissRequest = { showNotificationPermissionDialog = false },
+                title = { Text("Notifications disabled") },
+                text = { Text("To receive burrito reminders, enable notifications for this app in system settings.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showNotificationPermissionDialog = false
+                        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                        }
+                        context.startActivity(intent)
+                    }) {
+                        Text("Open Settings")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showNotificationPermissionDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
 
         Spacer(Modifier.height(24.dp))

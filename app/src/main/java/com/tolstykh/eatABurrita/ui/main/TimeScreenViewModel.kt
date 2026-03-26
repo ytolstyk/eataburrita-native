@@ -72,6 +72,13 @@ class TimeScreenViewModel @Inject constructor(
     val showLocationModal: StateFlow<Boolean> = appPrefs.showLocationModal
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val notificationPermissionAsked: StateFlow<Boolean> = appPrefs.notificationPermissionAsked
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun markNotificationPermissionAsked() {
+        viewModelScope.launch { appPrefs.setNotificationPermissionAsked() }
+    }
+
     private val _locationPickerOpen = MutableStateFlow(false)
     val locationPickerOpen: StateFlow<Boolean> = _locationPickerOpen.asStateFlow()
 
