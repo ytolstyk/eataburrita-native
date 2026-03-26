@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.10] - 2026-03-25
+
+### Changed
+- Version bump
+
+## [1.9] - 2026-03-25
+
+### Added
+- Places search in the eat/log modal
+
+### Changed
+- "Cancel" renamed to "Skip"
+
+### Fixed
+- Crash on startup
+
 ## [1.8] - 2026-03-25
 
 ### Fixed
