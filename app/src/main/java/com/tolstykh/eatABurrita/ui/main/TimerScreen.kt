@@ -170,6 +170,12 @@ fun TimerScreen(
                     burritoCount = data.burritoCount,
                     lastTimestamp = data.lastTimestamp,
                     dailyCounts = data.dailyCounts,
+                    favoritePlaceName = data.favoritePlaceName,
+                    favoritePlaceLat = data.favoritePlaceLat,
+                    favoritePlaceLng = data.favoritePlaceLng,
+                    lastPlaceName = data.lastPlaceName,
+                    lastPlaceLat = data.lastPlaceLat,
+                    lastPlaceLng = data.lastPlaceLng,
                 )
             }
         }
@@ -335,10 +341,20 @@ fun Share(
     burritoCount: Int = 0,
     lastTimestamp: Long = 0L,
     dailyCounts: List<Int> = emptyList(),
+    favoritePlaceName: String? = null,
+    favoritePlaceLat: Double? = null,
+    favoritePlaceLng: Double? = null,
+    lastPlaceName: String? = null,
+    lastPlaceLat: Double? = null,
+    lastPlaceLng: Double? = null,
 ) {
     Button(
         onClick = {
-            val text = getRandomMessageWithStats(burritoCount, lastTimestamp, dailyCounts)
+            val text = getRandomMessageWithStats(
+                burritoCount, lastTimestamp, dailyCounts,
+                favoritePlaceName, favoritePlaceLat, favoritePlaceLng,
+                lastPlaceName, lastPlaceLat, lastPlaceLng,
+            )
             val sendIntent = Intent(Intent.ACTION_SEND).apply {
                 putExtra(Intent.EXTRA_TEXT, text)
                 type = "text/plain"

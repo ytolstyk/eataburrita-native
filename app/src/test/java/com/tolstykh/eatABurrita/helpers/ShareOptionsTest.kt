@@ -51,4 +51,45 @@ class ShareOptionsTest {
         // "My best day: 10 burritos!" should appear in some runs
         assertTrue(messages.any { it.contains("10") })
     }
+
+    @Test
+    fun getRandomMessage_withFavoritePlace_appearsInSomeMessages() {
+        val messages = (1..100).map {
+            getRandomMessageWithStats(
+                10, System.currentTimeMillis(), listOf(1, 2),
+                favoritePlaceName = "Chipotle",
+                favoritePlaceLat = 37.7749,
+                favoritePlaceLng = -122.4194,
+            )
+        }
+        assertTrue(messages.any { it.contains("Chipotle") })
+    }
+
+    @Test
+    fun getRandomMessage_withLastPlace_appearsInSomeMessages() {
+        val messages = (1..100).map {
+            getRandomMessageWithStats(
+                5, System.currentTimeMillis(), listOf(1),
+                lastPlaceName = "Taco Bell",
+                lastPlaceLat = 34.0522,
+                lastPlaceLng = -118.2437,
+            )
+        }
+        assertTrue(messages.any { it.contains("Taco Bell") })
+    }
+
+    @Test
+    fun getRandomMessage_locationMessages_containMapsLink() {
+        val messages = (1..200).map {
+            getRandomMessageWithStats(
+                5, System.currentTimeMillis(), listOf(1),
+                favoritePlaceName = "Chipotle",
+                favoritePlaceLat = 37.7749,
+                favoritePlaceLng = -122.4194,
+            )
+        }
+        val linkMessages = messages.filter { it.contains("maps.google.com") }
+        assertTrue(linkMessages.isNotEmpty())
+        assertTrue(linkMessages.all { it.contains("37.7749") && it.contains("-122.4194") })
+    }
 }

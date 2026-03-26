@@ -33,6 +33,9 @@ data class TimeScreenData(
     val favoritePlaceName: String? = null,
     val favoritePlaceLat: Double? = null,
     val favoritePlaceLng: Double? = null,
+    val lastPlaceName: String? = null,
+    val lastPlaceLat: Double? = null,
+    val lastPlaceLng: Double? = null,
 )
 
 @HiltViewModel
@@ -52,6 +55,7 @@ class TimeScreenViewModel @Inject constructor(
             dao.getEntriesWithLocation(),
         ) { count, lastTs, entries, locationEntries ->
             val (favName, favLat, favLng) = buildFavoritePlace(locationEntries)
+            val lastEntry = locationEntries.firstOrNull()
             TimeScreenData(
                 burritoCount = count,
                 lastTimestamp = lastTs ?: 0L,
@@ -59,6 +63,9 @@ class TimeScreenViewModel @Inject constructor(
                 favoritePlaceName = favName,
                 favoritePlaceLat = favLat,
                 favoritePlaceLng = favLng,
+                lastPlaceName = lastEntry?.locationName,
+                lastPlaceLat = lastEntry?.locationLat,
+                lastPlaceLng = lastEntry?.locationLong,
             )
         }
             .map<TimeScreenData, TimeScreenUIState>(TimeScreenUIState::Success)
