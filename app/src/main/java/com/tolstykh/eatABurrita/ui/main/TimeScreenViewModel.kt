@@ -47,19 +47,27 @@ class TimeScreenViewModel @Inject constructor(
 
     private val thirtyDaysAgo: Long = Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
 
+    private val _today = MutableStateFlow(LocalDate.now(ZoneId.systemDefault()))
+
+    fun onTimerTick() {
+        val today = LocalDate.now(ZoneId.systemDefault())
+        if (_today.value != today) _today.value = today
+    }
+
     val timeScreenState: StateFlow<TimeScreenUIState> =
         combine(
             dao.getCount(),
             dao.getLatestTimestamp(),
             dao.getEntriesSince(thirtyDaysAgo),
             dao.getEntriesWithLocation(),
-        ) { count, lastTs, entries, locationEntries ->
+            _today,
+        ) { count, lastTs, entries, locationEntries, today ->
             val (favName, favLat, favLng) = buildFavoritePlace(locationEntries)
             val lastEntry = locationEntries.firstOrNull()
             TimeScreenData(
                 burritoCount = count,
                 lastTimestamp = lastTs ?: 0L,
-                dailyCounts = buildDailyCounts(entries),
+                dailyCounts = buildDailyCounts(entries, today),
                 favoritePlaceName = favName,
                 favoritePlaceLat = favLat,
                 favoritePlaceLng = favLng,
@@ -178,9 +186,8 @@ class TimeScreenViewModel @Inject constructor(
         return Triple(favoriteName, entry.locationLat, entry.locationLong)
     }
 
-    private fun buildDailyCounts(entries: List<BurritoEntry>): List<Int> {
+    private fun buildDailyCounts(entries: List<BurritoEntry>, today: LocalDate): List<Int> {
         val zone = ZoneId.systemDefault()
-        val today = LocalDate.now(zone)
         val countByDay = entries
             .map { Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
             .groupingBy { it }

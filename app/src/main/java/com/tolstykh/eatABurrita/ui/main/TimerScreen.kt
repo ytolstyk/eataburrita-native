@@ -138,6 +138,7 @@ fun TimerScreen(
             TimeSinceLastBurrito(
                 modifier = Modifier.padding(top = 32.dp),
                 lastTimestamp = data.lastTimestamp,
+                onTick = viewModel::onTimerTick,
             )
             TotalBurritos(modifier = Modifier.padding(8.dp), burritoCount = data.burritoCount)
             LastBurritoDate(modifier = Modifier.padding(8.dp), lastTimestamp = data.lastTimestamp)
@@ -280,6 +281,7 @@ fun BurritoConsumptionChart(
 fun TimeSinceLastBurrito(
     modifier: Modifier = Modifier,
     lastTimestamp: Long = 0L,
+    onTick: () -> Unit = {},
 ) {
     var now by remember(lastTimestamp) { mutableLongStateOf(Instant.now().toEpochMilli()) }
 
@@ -297,6 +299,7 @@ fun TimeSinceLastBurrito(
         while (true) {
             delay(1000L)
             now = Instant.now().toEpochMilli()
+            onTick()
         }
     }
 
