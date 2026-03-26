@@ -21,8 +21,8 @@ android {
         applicationId = "com.tolstykh.eatABurrita"
         minSdk = 35
         targetSdk = 36
-        versionCode = 12
-        versionName = "1.11"
+        versionCode = 13
+        versionName = "1.12"
 
         val gitCommit = providers.exec {
             commandLine("git", "rev-parse", "--short", "HEAD")

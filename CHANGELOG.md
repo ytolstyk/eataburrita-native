@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.12] - 2026-03-26
+
+### Added
+- Custom notification icon
+- More share messages
+
+### Changed
+- Graph refreshes automatically when the day changes
+
 ## [1.11] - 2026-03-25
 
 ### Fixed
