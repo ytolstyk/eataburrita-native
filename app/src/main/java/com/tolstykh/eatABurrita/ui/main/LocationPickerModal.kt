@@ -193,6 +193,8 @@ fun LocationPickerModal(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(12.dp))
+
                 if (!hasLocationPermission) {
                     Text(
                         "Location permission not granted. Enable it in Settings to see nearby restaurants.",
@@ -261,7 +263,10 @@ fun LocationPickerModal(
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { dontShowAgain = !dontShowAgain },
+                ) {
                     Checkbox(checked = dontShowAgain, onCheckedChange = { dontShowAgain = it })
                     Text("Don't show this again", style = MaterialTheme.typography.bodyMedium)
                 }
@@ -270,7 +275,10 @@ fun LocationPickerModal(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
                 ) {
-                    TextButton(onClick = onCancel) { Text("Skip") }
+                    TextButton(onClick = {
+                        if (dontShowAgain) onDontShowAgain()
+                        onCancel()
+                    }) { Text("Skip") }
                     Spacer(modifier = Modifier.padding(horizontal = 4.dp))
                     val canConfirm = selectedPlace != null || !hasLocationPermission || nearbyPlaces.isEmpty()
                     Button(
