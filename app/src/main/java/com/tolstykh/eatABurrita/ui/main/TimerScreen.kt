@@ -35,11 +35,16 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -73,6 +78,20 @@ fun TimerScreen(
     val currentLocation by viewModel.currentUserLocation.collectAsStateWithLifecycle()
     val dayLocationModal by viewModel.dayLocationModal.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasLocationPermission = context.hasLocationPermission()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) viewModel.refreshLocation()
+    }
 
     if (uiState is TimeScreenViewModel.TimeScreenUIState.Loading) {
         Box(
@@ -156,7 +175,7 @@ fun TimerScreen(
     if (locationPickerOpen) {
         LocationPickerModal(
             currentLocation = currentLocation,
-            hasLocationPermission = context.hasLocationPermission(),
+            hasLocationPermission = hasLocationPermission,
             onConfirm = { name, lat, lng -> viewModel.confirmAddBurrito(name, lat, lng) },
             onCancel = { viewModel.cancelAddBurrito() },
             onDontShowAgain = { viewModel.disableLocationModal() },

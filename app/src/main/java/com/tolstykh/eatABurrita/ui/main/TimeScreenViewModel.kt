@@ -8,6 +8,7 @@ import com.tolstykh.eatABurrita.data.BurritoDao
 import com.tolstykh.eatABurrita.data.BurritoEntry
 import com.tolstykh.eatABurrita.location.GetLocationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -80,8 +81,15 @@ class TimeScreenViewModel @Inject constructor(
     private val _dayLocationModal = MutableStateFlow<DayLocationData?>(null)
     val dayLocationModal: StateFlow<DayLocationData?> = _dayLocationModal.asStateFlow()
 
+    private var locationJob: Job? = null
+
     init {
-        viewModelScope.launch {
+        refreshLocation()
+    }
+
+    fun refreshLocation() {
+        locationJob?.cancel()
+        locationJob = viewModelScope.launch {
             getLocationUseCase().collect { latLng ->
                 _currentLocation.value = latLng
             }
