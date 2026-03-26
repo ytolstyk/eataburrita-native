@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Burrito body: capsule shape tapering to a twist on the left -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,7.5
+            L17,7.5
+            C20.5,7.5 22,9.5 22,12
+            C22,14.5 20.5,16.5 17,16.5
+            L8,16.5
+            C5,16.5 3.5,15 3.5,12
+            C3.5,9 5,7.5 8,7.5 Z" />
+
+    <!-- Twisted left tip - upper -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3.5,12 C3.5,10.5 4.5,9 5.5,8.5 L3,8 L2,12 Z" />
+
+    <!-- Twisted left tip - lower -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3.5,12 C3.5,13.5 4.5,15 5.5,15.5 L3,16 L2,12 Z" />
+
+    <!-- Wrap fold line 1 (cut-through to suggest layers) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.35"
+        android:pathData="M11,7.5 L11,16.5" />
+
+    <!-- Wrap fold line 2 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.35"
+        android:pathData="M15,7.5 L15,16.5" />
+
+</vector>
