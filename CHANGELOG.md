@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.11] - 2026-03-25
+
+### Fixed
+- Skip button checkbox state in the eat/log modal
+
 ## [1.10] - 2026-03-25
 
 ### Changed
