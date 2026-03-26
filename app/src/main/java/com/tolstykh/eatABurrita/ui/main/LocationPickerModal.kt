@@ -2,7 +2,9 @@ package com.tolstykh.eatABurrita.ui.main
 
 import android.util.Log
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -32,7 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.google.android.gms.maps.model.LatLng
@@ -40,9 +46,12 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.CircularBounds
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.PlaceTypes
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.SearchNearbyRequest
 import com.tolstykh.eatABurrita.BuildConfig
 import com.tolstykh.eatABurrita.helpers.distanceBetweenInMiles
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 
 @Composable
@@ -66,6 +75,38 @@ fun LocationPickerModal(
     var manualName by remember { mutableStateOf("") }
     var dontShowAgain by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+
+    var searchText by remember { mutableStateOf("") }
+    val searchPredictions = remember { mutableStateListOf<com.google.android.libraries.places.api.model.AutocompletePrediction>() }
+    var skipNextSearch by remember { mutableStateOf(false) }
+    var searchFieldWidth by remember { mutableStateOf(0) }
+
+    LaunchedEffect(searchText) {
+        if (skipNextSearch) {
+            skipNextSearch = false
+            return@LaunchedEffect
+        }
+        if (searchText.isBlank()) {
+            searchPredictions.clear()
+            return@LaunchedEffect
+        }
+        delay(300)
+        try {
+            val request = FindAutocompletePredictionsRequest.builder()
+                .setQuery(searchText)
+                .setTypesFilter(listOf("establishment"))
+                .build()
+            placesClient.findAutocompletePredictions(request)
+                .addOnSuccessListener { response ->
+                    searchPredictions.clear()
+                    searchPredictions.addAll(response.autocompletePredictions.take(5))
+                }
+                .addOnFailureListener { e -> Log.e("LocationPicker", "Autocomplete failed", e) }
+                .await()
+        } catch (e: Exception) {
+            Log.e("LocationPicker", "Autocomplete error", e)
+        }
+    }
 
     LaunchedEffect(hasLocationPermission, currentLocation) {
         if (hasLocationPermission && currentLocation != null) {
@@ -101,6 +142,56 @@ fun LocationPickerModal(
             Column(modifier = Modifier.padding(20.dp)) {
                 Text("Where are you eating?", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(12.dp))
+
+                val density = LocalDensity.current
+                Box(modifier = Modifier.fillMaxWidth().onGloballyPositioned { searchFieldWidth = it.size.width }) {
+                    OutlinedTextField(
+                        value = searchText,
+                        onValueChange = { searchText = it },
+                        label = { Text("Search restaurant") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DropdownMenu(
+                        expanded = searchPredictions.isNotEmpty(),
+                        onDismissRequest = { searchPredictions.clear() },
+                        modifier = Modifier.width(with(density) { searchFieldWidth.toDp() }),
+                    ) {
+                        searchPredictions.forEach { prediction ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(
+                                            text = prediction.getPrimaryText(null).toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                        )
+                                        Text(
+                                            text = prediction.getSecondaryText(null).toString(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    val placeRequest = FetchPlaceRequest.newInstance(
+                                        prediction.placeId,
+                                        listOf(Place.Field.DISPLAY_NAME, Place.Field.LOCATION),
+                                    )
+                                    placesClient.fetchPlace(placeRequest)
+                                        .addOnSuccessListener { fetchResponse ->
+                                            skipNextSearch = true
+                                            selectedPlace = fetchResponse.place
+                                            searchText = fetchResponse.place.displayName ?: ""
+                                            searchPredictions.clear()
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e("LocationPicker", "FetchPlace failed", e)
+                                        }
+                                },
+                            )
+                        }
+                    }
+                }
 
                 if (!hasLocationPermission) {
                     Text(
@@ -181,15 +272,11 @@ fun LocationPickerModal(
                 ) {
                     TextButton(onClick = onCancel) { Text("Skip") }
                     Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                    val canConfirm = if (hasLocationPermission) {
-                        selectedPlace != null || nearbyPlaces.isEmpty()
-                    } else {
-                        true
-                    }
+                    val canConfirm = selectedPlace != null || !hasLocationPermission || nearbyPlaces.isEmpty()
                     Button(
                         onClick = {
                             if (dontShowAgain) onDontShowAgain()
-                            if (hasLocationPermission && selectedPlace != null) {
+                            if (selectedPlace != null) {
                                 val p = selectedPlace!!
                                 onConfirm(p.displayName, p.location?.latitude, p.location?.longitude)
                             } else if (!hasLocationPermission) {
