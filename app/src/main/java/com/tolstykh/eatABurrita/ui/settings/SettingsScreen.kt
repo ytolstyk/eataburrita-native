@@ -67,7 +67,6 @@ import java.util.Calendar
 import java.util.TimeZone
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import com.tolstykh.eatABurrita.notification.BurritoNotificationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -187,7 +186,6 @@ fun SettingsScreen(
                         ) == PackageManager.PERMISSION_GRANTED
                         if (granted) {
                             viewModel.toggleNotifications(true)
-                            BurritoNotificationManager.sendThreeDayReminder(context)
                         } else {
                             showNotificationPermissionDialog = true
                         }
