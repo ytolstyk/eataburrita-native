@@ -3,7 +3,6 @@ package com.tolstykh.eatABurrita.ui.map
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import android.util.Log
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -47,7 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
+import com.tolstykh.eatABurrita.ui.components.LocationPermissionBanner
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.offset
@@ -149,25 +148,33 @@ fun MapScreen(
                 }
 
                 ViewState.RevokedPermissions -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("We need permissions to use this app")
-                        Button(
-                            onClick = {
-                                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                            },
-                            enabled = !context.hasLocationPermission()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            if (context.hasLocationPermission()) CircularProgressIndicator(
-                                modifier = Modifier.size(14.dp),
-                                color = Color.White
+                            LocationPermissionBanner()
+                        }
+                        Button(
+                            onClick = onBackPressed,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(start = 8.dp, top = statusBarHeight() + 8.dp)
+                                .size(40.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = extendedLight.extra.iconBackground.copy(alpha = 0.85f)
+                            ),
+                            elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 4.dp),
+                            shape = RoundedCornerShape(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = extendedLight.extra.iconTint
                             )
-                            else Text("Settings")
                         }
                     }
                 }
@@ -189,15 +196,45 @@ fun MapScreen(
                         viewModel.lastCameraPosition = cameraState.position
                     }
 
-                    location?.let { currentLoc ->
+                    if (location != null) {
                         FullMapView(
-                            currentPosition = currentLoc,
+                            currentPosition = location,
                             cameraState = cameraState,
                             onBackPressed = onBackPressed,
                             placeStats = placeStats,
                             getBurritoCount = viewModel::getBurritoCountForPlace,
                             getPlaceStats = viewModel::getPlaceStatsForPlace,
                         )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                LocationPermissionBanner()
+                            }
+                            Button(
+                                onClick = onBackPressed,
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(start = 8.dp, top = statusBarHeight() + 8.dp)
+                                    .size(40.dp),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = extendedLight.extra.iconBackground.copy(alpha = 0.85f)
+                                ),
+                                elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 4.dp),
+                                shape = RoundedCornerShape(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = extendedLight.extra.iconTint
+                                )
+                            }
+                        }
                     }
                 }
             }

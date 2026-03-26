@@ -48,6 +48,7 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.PlaceTypes
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.tolstykh.eatABurrita.ui.components.LocationPermissionBanner
 import com.google.android.libraries.places.api.net.SearchNearbyRequest
 import com.tolstykh.eatABurrita.BuildConfig
 import com.tolstykh.eatABurrita.helpers.distanceBetweenInMiles
@@ -72,7 +73,6 @@ fun LocationPickerModal(
 
     val nearbyPlaces = remember { mutableStateListOf<Place>() }
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
-    var manualName by remember { mutableStateOf("") }
     var dontShowAgain by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
@@ -196,19 +196,7 @@ fun LocationPickerModal(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 if (!hasLocationPermission) {
-                    Text(
-                        "Location permission not granted. Enable it in Settings to see nearby restaurants.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = manualName,
-                        onValueChange = { manualName = it },
-                        label = { Text("Restaurant name (optional)") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    LocationPermissionBanner(modifier = Modifier.fillMaxWidth())
                 } else if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                     Spacer(modifier = Modifier.height(8.dp))
@@ -288,7 +276,7 @@ fun LocationPickerModal(
                                 val p = selectedPlace!!
                                 onConfirm(p.displayName, p.location?.latitude, p.location?.longitude)
                             } else if (!hasLocationPermission) {
-                                onConfirm(manualName.trim().ifEmpty { null }, null, null)
+                                onConfirm(null, null, null)
                             } else {
                                 onConfirm(null, null, null)
                             }
