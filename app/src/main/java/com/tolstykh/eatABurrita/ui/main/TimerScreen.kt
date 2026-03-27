@@ -23,10 +23,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,8 +54,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -76,6 +86,7 @@ fun TimerScreen(
     viewModel: TimeScreenViewModel = hiltViewModel(),
     onOpenMap: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenStats: () -> Unit,
 ) {
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
     val locationPickerOpen by viewModel.locationPickerOpen.collectAsStateWithLifecycle()
@@ -157,7 +168,16 @@ fun TimerScreen(
                 dailyCounts = data.dailyCounts,
                 onDayClick = { dayIndex -> viewModel.onChartDayClicked(dayIndex) },
             )
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "See more stats →",
+                color = colorScheme.primary,
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .clickable { onOpenStats() }
+                    .padding(vertical = 4.dp),
+            )
+            Spacer(modifier = Modifier.height(32.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
@@ -181,13 +201,35 @@ fun TimerScreen(
             }
         }
     }
-    IconButton(
-        onClick = onOpenSettings,
+    var menuExpanded by remember { mutableStateOf(false) }
+    Box(
         modifier = Modifier
             .align(Alignment.TopEnd)
             .padding(top = statusBarHeight() + 8.dp, end = 8.dp)
     ) {
-        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = colorScheme.onBackground)
+        IconButton(onClick = { menuExpanded = true }) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = colorScheme.onBackground)
+        }
+        DropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = { menuExpanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Map") },
+                leadingIcon = { Icon(Icons.Default.Map, contentDescription = null) },
+                onClick = { menuExpanded = false; onOpenMap() },
+            )
+            DropdownMenuItem(
+                text = { Text("Stats") },
+                leadingIcon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                onClick = { menuExpanded = false; onOpenStats() },
+            )
+            DropdownMenuItem(
+                text = { Text("Settings") },
+                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                onClick = { menuExpanded = false; onOpenSettings() },
+            )
+        }
     }
     } // end Box
 
@@ -214,9 +256,11 @@ fun BurritoConsumptionChart(
     modifier: Modifier = Modifier,
     dailyCounts: List<Int>,
     onDayClick: ((Int) -> Unit)? = null,
+    textMeasurer: TextMeasurer? = null,
 ) {
     val primaryColor = colorScheme.primary
     val barBackground = colorScheme.surfaceVariant
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
 
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Canvas(
@@ -224,7 +268,7 @@ fun BurritoConsumptionChart(
                 .fillMaxWidth()
                 .weight(1f)
                 .then(
-                    if (onDayClick != null) {
+                    if (onDayClick != null || textMeasurer != null) {
                         Modifier.pointerInput(dailyCounts) {
                             detectTapGestures { offset ->
                                 val barCount = dailyCounts.size
@@ -233,8 +277,11 @@ fun BurritoConsumptionChart(
                                 val barWidth = (size.width - gap * (barCount - 1)) / barCount
                                 val rawIndex = (offset.x / (barWidth + gap)).toInt()
                                 val clampedIndex = rawIndex.coerceIn(0, barCount - 1)
+                                if (textMeasurer != null) {
+                                    selectedIndex = if (selectedIndex == clampedIndex) null else clampedIndex
+                                }
                                 if (dailyCounts[clampedIndex] > 0) {
-                                    onDayClick(clampedIndex)
+                                    onDayClick?.invoke(clampedIndex)
                                 }
                             }
                         }
@@ -267,13 +314,25 @@ fun BurritoConsumptionChart(
                     )
                 }
             }
+
+            if (textMeasurer != null) {
+                selectedIndex?.let { idx ->
+                    val count = dailyCounts[idx]
+                    val left = idx * (barWidth + gap)
+                    val barHeight = (count.toFloat() / maxCount) * size.height
+                    val barCenter = left + barWidth / 2f
+                    val radius = 18.dp.toPx()
+                    val cy = (size.height - barHeight - radius - 4.dp.toPx()).coerceAtLeast(radius)
+                    val alpha = 0.4f + 0.6f * idx / (barCount - 1).coerceAtLeast(1)
+                    drawCircle(color = primaryColor.copy(alpha = alpha), radius = radius, center = Offset(barCenter, cy))
+                    val layout = textMeasurer.measure(
+                        text = count.toString(),
+                        style = TextStyle(color = androidx.compose.ui.graphics.Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    )
+                    drawText(layout, topLeft = Offset(barCenter - layout.size.width / 2f, cy - layout.size.height / 2f))
+                }
+            }
         }
-        Text(
-            text = "Last 30 days",
-            fontSize = 11.sp,
-            color = colorScheme.onSurface.copy(alpha = 0.45f),
-            modifier = Modifier.padding(top = 4.dp),
-        )
     }
 }
 

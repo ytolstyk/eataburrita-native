@@ -4,7 +4,8 @@
       "Bash(./gradlew assembleDebug:*)",
       "Bash(./gradlew test:*)",
       "Bash(./gradlew :app:testDebugUnitTest 2>&1 | tail -80)",
-      "Bash(./gradlew :app:testDebugUnitTest 2>&1 | tail -40)"
+      "Bash(./gradlew :app:testDebugUnitTest 2>&1 | tail -40)",
+      "Bash(adb logcat:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
