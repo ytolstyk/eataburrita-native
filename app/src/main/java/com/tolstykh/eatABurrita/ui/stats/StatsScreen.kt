@@ -74,6 +74,31 @@ fun StatsScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            if (stats.totalCount == 0) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
+                        .padding(vertical = 64.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "No stats yet",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Start logging burritos to see your stats here.",
+                            fontSize = 14.sp,
+                            color = colorScheme.onSurface.copy(alpha = 0.55f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            } else {
+
             SummarySection(stats)
 
             Spacer(Modifier.height(28.dp))
@@ -140,6 +165,8 @@ fun StatsScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+
+            } // end else (totalCount > 0)
         }
     }
 }
