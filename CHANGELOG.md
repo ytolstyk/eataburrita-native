@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13] - 2026-03-26
+
+### Fixed
+- Crash when there are zero burrito records
+
+### Changed
+- Added stats and null safety improvements
+
 ## [1.12] - 2026-03-26
 
 ### Added
