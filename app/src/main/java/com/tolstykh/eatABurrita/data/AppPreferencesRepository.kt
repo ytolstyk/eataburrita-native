@@ -18,6 +18,8 @@ class AppPreferencesRepository @Inject constructor(
     private val showLocationModalKey = booleanPreferencesKey("show_location_modal")
     private val notificationsEnabledKey = booleanPreferencesKey("notifications_enabled")
     private val notificationPermissionAskedKey = booleanPreferencesKey("notification_permission_asked")
+    private val threeDayNotifiedKey = booleanPreferencesKey("three_day_notified")
+    private val sevenDayNotifiedKey = booleanPreferencesKey("seven_day_notified")
 
     val isDarkMode: Flow<Boolean> = context.appPrefsDataStore.data
         .map { prefs -> prefs[darkModeKey] ?: false }
@@ -30,6 +32,12 @@ class AppPreferencesRepository @Inject constructor(
 
     val notificationPermissionAsked: Flow<Boolean> = context.appPrefsDataStore.data
         .map { prefs -> prefs[notificationPermissionAskedKey] ?: false }
+
+    val threeDayNotified: Flow<Boolean> = context.appPrefsDataStore.data
+        .map { prefs -> prefs[threeDayNotifiedKey] ?: false }
+
+    val sevenDayNotified: Flow<Boolean> = context.appPrefsDataStore.data
+        .map { prefs -> prefs[sevenDayNotifiedKey] ?: false }
 
     suspend fun setDarkMode(dark: Boolean) {
         context.appPrefsDataStore.edit { prefs ->
@@ -52,6 +60,25 @@ class AppPreferencesRepository @Inject constructor(
     suspend fun setNotificationPermissionAsked() {
         context.appPrefsDataStore.edit { prefs ->
             prefs[notificationPermissionAskedKey] = true
+        }
+    }
+
+    suspend fun setThreeDayNotified(notified: Boolean) {
+        context.appPrefsDataStore.edit { prefs ->
+            prefs[threeDayNotifiedKey] = notified
+        }
+    }
+
+    suspend fun setSevenDayNotified(notified: Boolean) {
+        context.appPrefsDataStore.edit { prefs ->
+            prefs[sevenDayNotifiedKey] = notified
+        }
+    }
+
+    suspend fun resetNotificationSentFlags() {
+        context.appPrefsDataStore.edit { prefs ->
+            prefs[threeDayNotifiedKey] = false
+            prefs[sevenDayNotifiedKey] = false
         }
     }
 }

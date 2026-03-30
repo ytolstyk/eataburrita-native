@@ -28,8 +28,19 @@ class BurritoReminderWorker @AssistedInject constructor(
 
         val daysSince = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - latestTimestamp)
         when {
-            daysSince >= 7 -> BurritoNotificationManager.sendSevenDayReminder(applicationContext)
-            daysSince >= 3 -> BurritoNotificationManager.sendThreeDayReminder(applicationContext)
+            daysSince >= 7 -> {
+                if (!appPrefs.sevenDayNotified.first()) {
+                    BurritoNotificationManager.sendSevenDayReminder(applicationContext)
+                    appPrefs.setSevenDayNotified(true)
+                    appPrefs.setThreeDayNotified(true)
+                }
+            }
+            daysSince >= 3 -> {
+                if (!appPrefs.threeDayNotified.first()) {
+                    BurritoNotificationManager.sendThreeDayReminder(applicationContext)
+                    appPrefs.setThreeDayNotified(true)
+                }
+            }
         }
 
         return Result.success()

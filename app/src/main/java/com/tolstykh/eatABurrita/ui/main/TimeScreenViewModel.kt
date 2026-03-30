@@ -124,6 +124,7 @@ class TimeScreenViewModel @Inject constructor(
                 _locationPickerOpen.value = true
             } else {
                 dao.insert(BurritoEntry(timestamp = Instant.now().toEpochMilli()))
+                appPrefs.resetNotificationSentFlags()
             }
         }
     }
@@ -139,6 +140,7 @@ class TimeScreenViewModel @Inject constructor(
                     locationLong = lng,
                 )
             )
+            appPrefs.resetNotificationSentFlags()
         }
     }
 
@@ -146,6 +148,7 @@ class TimeScreenViewModel @Inject constructor(
         _locationPickerOpen.value = false
         viewModelScope.launch {
             dao.insert(BurritoEntry(timestamp = Instant.now().toEpochMilli()))
+            appPrefs.resetNotificationSentFlags()
         }
     }
 
