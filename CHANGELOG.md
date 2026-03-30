@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.14] - 2026-03-30
+
+### Fixed
+- Notification frequency reduced to avoid sending too many reminders
+
 ## [1.13] - 2026-03-26
 
 ### Fixed
