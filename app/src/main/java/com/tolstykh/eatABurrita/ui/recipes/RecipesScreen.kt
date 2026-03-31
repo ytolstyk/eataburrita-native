@@ -183,7 +183,7 @@ private fun RecipeItem(
                 recipe.ingredients.forEach { ingredient ->
                     Text(
                         text = "• $ingredient",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(vertical = 1.dp),
                     )
                 }
@@ -199,7 +199,7 @@ private fun RecipeItem(
                 recipe.steps.forEachIndexed { index, step ->
                     Text(
                         text = "${index + 1}. $step",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(bottom = 4.dp),
                     )
                 }
@@ -207,7 +207,7 @@ private fun RecipeItem(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "View Source →",
+                    text = "Find Similar →",
                     color = colorScheme.primary,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
