@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.15] - 2026-03-31
+
+### Added
+- Recipes view with browsable burrito recipes
+- Recipe checkboxes for tracking ingredients/steps
+
+### Fixed
+- Font sizes adjusted for better readability
+
 ## [1.14] - 2026-03-30
 
 ### Fixed
