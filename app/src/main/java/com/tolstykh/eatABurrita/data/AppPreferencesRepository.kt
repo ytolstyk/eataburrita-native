@@ -3,6 +3,7 @@ package com.tolstykh.eatABurrita.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.tolstykh.eatABurrita.appPrefsDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -20,6 +21,7 @@ class AppPreferencesRepository @Inject constructor(
     private val notificationPermissionAskedKey = booleanPreferencesKey("notification_permission_asked")
     private val threeDayNotifiedKey = booleanPreferencesKey("three_day_notified")
     private val sevenDayNotifiedKey = booleanPreferencesKey("seven_day_notified")
+    private val checkedIngredientsKey = stringSetPreferencesKey("checked_ingredients")
 
     val isDarkMode: Flow<Boolean> = context.appPrefsDataStore.data
         .map { prefs -> prefs[darkModeKey] ?: false }
@@ -38,6 +40,9 @@ class AppPreferencesRepository @Inject constructor(
 
     val sevenDayNotified: Flow<Boolean> = context.appPrefsDataStore.data
         .map { prefs -> prefs[sevenDayNotifiedKey] ?: false }
+
+    val checkedIngredients: Flow<Set<String>> = context.appPrefsDataStore.data
+        .map { prefs -> prefs[checkedIngredientsKey] ?: emptySet() }
 
     suspend fun setDarkMode(dark: Boolean) {
         context.appPrefsDataStore.edit { prefs ->
@@ -72,6 +77,21 @@ class AppPreferencesRepository @Inject constructor(
     suspend fun setSevenDayNotified(notified: Boolean) {
         context.appPrefsDataStore.edit { prefs ->
             prefs[sevenDayNotifiedKey] = notified
+        }
+    }
+
+    suspend fun toggleIngredient(recipeId: Int, index: Int) {
+        val key = "${recipeId}_${index}"
+        context.appPrefsDataStore.edit { prefs ->
+            val current = prefs[checkedIngredientsKey] ?: emptySet()
+            prefs[checkedIngredientsKey] = if (key in current) current - key else current + key
+        }
+    }
+
+    suspend fun uncheckAllIngredients(recipeId: Int) {
+        context.appPrefsDataStore.edit { prefs ->
+            val current = prefs[checkedIngredientsKey] ?: emptySet()
+            prefs[checkedIngredientsKey] = current.filterNot { it.startsWith("${recipeId}_") }.toSet()
         }
     }
 

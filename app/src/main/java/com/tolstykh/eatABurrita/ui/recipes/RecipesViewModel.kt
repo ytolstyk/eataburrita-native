@@ -5,12 +5,15 @@ import android.location.Geocoder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
+import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.location.hasLocationPermission
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
@@ -305,10 +308,22 @@ val allRecipes: List<BurritoRecipe> = listOf(
 @HiltViewModel
 class RecipesViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val prefs: AppPreferencesRepository,
 ) : ViewModel() {
 
     private val _localFavoriteId = MutableStateFlow<Int?>(null)
     val localFavoriteId: StateFlow<Int?> = _localFavoriteId.asStateFlow()
+
+    val checkedIngredients: StateFlow<Set<String>> = prefs.checkedIngredients
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    fun toggleIngredient(recipeId: Int, index: Int) {
+        viewModelScope.launch { prefs.toggleIngredient(recipeId, index) }
+    }
+
+    fun uncheckAll(recipeId: Int) {
+        viewModelScope.launch { prefs.uncheckAllIngredients(recipeId) }
+    }
 
     init {
         resolveLocalFavorite()

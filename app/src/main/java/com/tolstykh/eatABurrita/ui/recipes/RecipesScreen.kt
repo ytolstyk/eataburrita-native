@@ -2,6 +2,7 @@ package com.tolstykh.eatABurrita.ui.recipes
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.foundation.layout.statusBarsPadding
 
 @Composable
 fun RecipesScreen(
@@ -48,6 +51,7 @@ fun RecipesScreen(
     val localFavorite = remember(localFavoriteId) {
         localFavoriteId?.let { id -> allRecipes.find { it.id == id } }
     }
+    val checkedIngredients by viewModel.checkedIngredients.collectAsStateWithLifecycle()
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -85,6 +89,9 @@ fun RecipesScreen(
                         recipe = localFavorite,
                         isLocalFavorite = true,
                         initiallyExpanded = true,
+                        checkedIngredients = checkedIngredients,
+                        onToggleIngredient = { index -> viewModel.toggleIngredient(localFavorite.id, index) },
+                        onUncheckAll = { viewModel.uncheckAll(localFavorite.id) },
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
@@ -107,6 +114,9 @@ fun RecipesScreen(
                             recipe = recipe,
                             isLocalFavorite = false,
                             initiallyExpanded = false,
+                            checkedIngredients = checkedIngredients,
+                            onToggleIngredient = { idx -> viewModel.toggleIngredient(recipe.id, idx) },
+                            onUncheckAll = { viewModel.uncheckAll(recipe.id) },
                         )
                         if (index < allRecipes.size - 1) {
                             HorizontalDivider()
@@ -125,6 +135,9 @@ private fun RecipeItem(
     recipe: BurritoRecipe,
     isLocalFavorite: Boolean,
     initiallyExpanded: Boolean,
+    checkedIngredients: Set<String>,
+    onToggleIngredient: (Int) -> Unit,
+    onUncheckAll: () -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
     val uriHandler = LocalUriHandler.current
@@ -174,18 +187,51 @@ private fun RecipeItem(
             Column(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             ) {
-                Text(
-                    text = "Ingredients",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = colorScheme.primary,
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                recipe.ingredients.forEach { ingredient ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        text = "• $ingredient",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(vertical = 1.dp),
+                        text = "Ingredients",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = colorScheme.primary,
                     )
+                    val anyChecked = recipe.ingredients.indices.any { i ->
+                        "${recipe.id}_${i}" in checkedIngredients
+                    }
+                    if (anyChecked) {
+                        TextButton(
+                            onClick = onUncheckAll,
+                            modifier = Modifier.padding(0.dp),
+                        ) {
+                            Text(
+                                text = "Uncheck All",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                recipe.ingredients.forEachIndexed { index, ingredient ->
+                    val checked = "${recipe.id}_${index}" in checkedIngredients
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onToggleIngredient(index) }
+                            .padding(vertical = 1.dp),
+                    ) {
+                        Checkbox(
+                            checked = checked,
+                            onCheckedChange = { onToggleIngredient(index) },
+                        )
+                        Text(
+                            text = ingredient,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (checked) colorScheme.onSurface.copy(alpha = 0.4f) else colorScheme.onSurface,
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
