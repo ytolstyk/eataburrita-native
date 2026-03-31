@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -87,6 +88,7 @@ fun TimerScreen(
     onOpenMap: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenStats: () -> Unit,
+    onOpenRecipes: () -> Unit,
 ) {
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
     val locationPickerOpen by viewModel.locationPickerOpen.collectAsStateWithLifecycle()
@@ -223,6 +225,11 @@ fun TimerScreen(
                 text = { Text("Stats") },
                 leadingIcon = { Icon(Icons.Default.BarChart, contentDescription = null) },
                 onClick = { menuExpanded = false; onOpenStats() },
+            )
+            DropdownMenuItem(
+                text = { Text("Recipes") },
+                leadingIcon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
+                onClick = { menuExpanded = false; onOpenRecipes() },
             )
             DropdownMenuItem(
                 text = { Text("Settings") },

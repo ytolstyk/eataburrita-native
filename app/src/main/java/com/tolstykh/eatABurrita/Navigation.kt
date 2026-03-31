@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tolstykh.eatABurrita.ui.main.TimerScreen
 import com.tolstykh.eatABurrita.ui.map.MapScreen
+import com.tolstykh.eatABurrita.ui.recipes.RecipesScreen
 import com.tolstykh.eatABurrita.ui.settings.SettingsScreen
 import com.tolstykh.eatABurrita.ui.stats.StatsScreen
 import kotlinx.serialization.SerialName
@@ -30,6 +31,7 @@ fun Navigation(
                 onOpenMap = { navController.navigate(Map) },
                 onOpenSettings = { navController.navigate(Settings) },
                 onOpenStats = { navController.navigate(Stats) },
+                onOpenRecipes = { navController.navigate(Recipes) },
             )
         }
         composable<Map> {
@@ -46,6 +48,9 @@ fun Navigation(
         }
         composable<Stats> {
             StatsScreen(onBackPressed = { navController.popBackStack() })
+        }
+        composable<Recipes> {
+            RecipesScreen(onBackPressed = { navController.popBackStack() })
         }
     }
 }
@@ -65,3 +70,7 @@ data object Settings
 @Serializable
 @SerialName("Stats")
 data object Stats
+
+@Serializable
+@SerialName("Recipes")
+data object Recipes
