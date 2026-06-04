@@ -2,6 +2,9 @@ package com.tolstykh.eatABurrita.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val CameraGreen = Color(0xFF43A047)
+val LightCameraGreen = Color(0xFF81C784)
+
 val Orange = Color(0xFFFF8D03)
 val LightOrange = Color(0xFFFFA84A)
 

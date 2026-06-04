@@ -1,8 +1,11 @@
 package com.tolstykh.eatABurrita.ui.main
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
+import com.tolstykh.eatABurrita.classifier.BurritoClassifier
+import com.tolstykh.eatABurrita.classifier.ClassificationOutcome
 import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.data.BurritoDao
 import com.tolstykh.eatABurrita.data.BurritoEntry
@@ -43,6 +46,7 @@ class TimeScreenViewModel @Inject constructor(
     private val dao: BurritoDao,
     private val appPrefs: AppPreferencesRepository,
     private val getLocationUseCase: GetLocationUseCase,
+    private val burritoClassifier: BurritoClassifier,
 ) : ViewModel() {
 
     private val thirtyDaysAgo: Long = Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
@@ -176,6 +180,31 @@ class TimeScreenViewModel @Inject constructor(
 
     fun dismissDayLocationModal() {
         _dayLocationModal.value = null
+    }
+
+    sealed interface BurritoVerdictState {
+        data object None : BurritoVerdictState
+        data object Classifying : BurritoVerdictState
+        data class Verdict(val confidence: Float, val label: String) : BurritoVerdictState
+        data object Failure : BurritoVerdictState
+    }
+
+    private val _verdictState = MutableStateFlow<BurritoVerdictState>(BurritoVerdictState.None)
+    val verdictState: StateFlow<BurritoVerdictState> = _verdictState.asStateFlow()
+
+    fun classifyPhoto(photoUri: Uri) {
+        _verdictState.value = BurritoVerdictState.Classifying
+        viewModelScope.launch {
+            _verdictState.value = when (val outcome = burritoClassifier.classify(photoUri)) {
+                is ClassificationOutcome.Success -> BurritoVerdictState.Verdict(outcome.confidence, outcome.label)
+                is ClassificationOutcome.NoMatch -> BurritoVerdictState.Verdict(0f, "")
+                is ClassificationOutcome.Failure -> BurritoVerdictState.Failure
+            }
+        }
+    }
+
+    fun dismissVerdict() {
+        _verdictState.value = BurritoVerdictState.None
     }
 
     private fun buildFavoritePlace(entries: List<BurritoEntry>): Triple<String?, Double?, Double?> {

@@ -2,6 +2,10 @@ package com.tolstykh.eatABurrita.ui.main
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -14,16 +18,24 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -36,9 +48,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -46,7 +61,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -56,8 +73,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.TextMeasurer
+import com.tolstykh.eatABurrita.ui.theme.CameraGreen
+import com.tolstykh.eatABurrita.ui.theme.LightCameraGreen
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -76,7 +97,9 @@ import androidx.core.net.toUri
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.delay
+import java.io.File
 import java.time.Instant
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -99,6 +122,39 @@ fun TimerScreen(
         if (!notificationPermissionAsked && !notificationPermissionState.status.isGranted) {
             notificationPermissionState.launchPermissionRequest()
             viewModel.markNotificationPermissionAsked()
+        }
+    }
+    val verdictState by viewModel.verdictState.collectAsStateWithLifecycle()
+    var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var showCameraRationale by remember { mutableStateOf(false) }
+    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+    val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        val uri = photoUri
+        if (success && uri != null) {
+            viewModel.classifyPhoto(uri)
+        } else {
+            photoUri = null
+        }
+    }
+    val cleanupPhoto: () -> Unit = {
+        photoUri?.let { uri ->
+            runCatching { context.contentResolver.delete(uri, null, null) }
+            photoUri = null
+        }
+    }
+    val onCameraClick: () -> Unit = {
+        when {
+            cameraPermissionState.status.isGranted -> {
+                val uri = createPhotoUri(context)
+                photoUri = uri
+                try {
+                    takePictureLauncher.launch(uri)
+                } catch (_: Exception) {
+                    photoUri = null
+                }
+            }
+            cameraPermissionState.status.shouldShowRationale -> showCameraRationale = true
+            else -> cameraPermissionState.launchPermissionRequest()
         }
     }
     var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
@@ -178,26 +234,51 @@ fun TimerScreen(
                     .padding(vertical = 4.dp),
             )
             Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
+            val cell = 80.dp
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy((-20).dp),
             ) {
-                MapButton(onClick = onOpenMap)
-                EatButton(
-                    onClick = viewModel::requestAddBurrito
-                )
-                Share(
-                    context = LocalContext.current,
-                    burritoCount = data.burritoCount,
-                    lastTimestamp = data.lastTimestamp,
-                    dailyCounts = data.dailyCounts,
-                    favoritePlaceName = data.favoritePlaceName,
-                    favoritePlaceLat = data.favoritePlaceLat,
-                    favoritePlaceLng = data.favoritePlaceLng,
-                    lastPlaceName = data.lastPlaceName,
-                    lastPlaceLat = data.lastPlaceLat,
-                    lastPlaceLng = data.lastPlaceLng,
-                )
+                // Row 1: Eat at center — zIndex(1f) so it draws above Map/Share when overlapping
+                Row(modifier = Modifier.zIndex(1f)) {
+                    Box(modifier = Modifier.size(cell))
+                    Box(modifier = Modifier.size(cell), contentAlignment = Alignment.Center) {
+                        EatButton(onClick = viewModel::requestAddBurrito)
+                    }
+                    Box(modifier = Modifier.size(cell))
+                }
+                // Row 2: Map at left, Share at right
+                Row {
+                    Box(modifier = Modifier.size(cell), contentAlignment = Alignment.Center) {
+                        MapButton(onClick = onOpenMap)
+                    }
+                    Box(modifier = Modifier.size(cell))
+                    Box(modifier = Modifier.size(cell), contentAlignment = Alignment.Center) {
+                        Share(
+                            context = LocalContext.current,
+                            burritoCount = data.burritoCount,
+                            lastTimestamp = data.lastTimestamp,
+                            dailyCounts = data.dailyCounts,
+                            favoritePlaceName = data.favoritePlaceName,
+                            favoritePlaceLat = data.favoritePlaceLat,
+                            favoritePlaceLng = data.favoritePlaceLng,
+                            lastPlaceName = data.lastPlaceName,
+                            lastPlaceLat = data.lastPlaceLat,
+                            lastPlaceLng = data.lastPlaceLng,
+                        )
+                    }
+                }
+                // Row 3: Camera at center
+                Row {
+                    Box(modifier = Modifier.size(cell))
+                    Box(modifier = Modifier.size(cell).offset(y = (-12).dp), contentAlignment = Alignment.Center) {
+                        CameraButton(
+                            onClick = onCameraClick,
+                            enabled = verdictState is TimeScreenViewModel.BurritoVerdictState.None,
+                        )
+                    }
+                    Box(modifier = Modifier.size(cell))
+                }
             }
         }
     }
@@ -252,6 +333,25 @@ fun TimerScreen(
         DayLocationModal(
             data = dayData,
             onDismiss = { viewModel.dismissDayLocationModal() },
+        )
+    }
+
+    if (verdictState !is TimeScreenViewModel.BurritoVerdictState.None) {
+        BurritoVerdictDialog(
+            verdictState = verdictState,
+            photoUri = photoUri,
+            onAddEntry = { cleanupPhoto(); viewModel.dismissVerdict(); viewModel.requestAddBurrito() },
+            onDismiss = { cleanupPhoto(); viewModel.dismissVerdict() },
+        )
+    }
+
+    if (showCameraRationale) {
+        CameraRationaleDialog(
+            onDismiss = { showCameraRationale = false },
+            onAllow = {
+                showCameraRationale = false
+                cameraPermissionState.launchPermissionRequest()
+            },
         )
     }
 }
@@ -332,7 +432,7 @@ fun BurritoConsumptionChart(
                     drawCircle(color = primaryColor.copy(alpha = alpha), radius = radius, center = Offset(barCenter, cy))
                     val layout = textMeasurer.measure(
                         text = count.toString(),
-                        style = TextStyle(color = androidx.compose.ui.graphics.Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                        style = TextStyle(color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold),
                     )
                     drawText(layout, topLeft = Offset(barCenter - layout.size.width / 2f, cy - layout.size.height / 2f))
                 }
@@ -391,14 +491,13 @@ fun EatButton(onClick: () -> Unit) {
     Button(
         onClick = { onClick() },
         shape = CircleShape,
-        modifier = Modifier
-            .size(144.dp)
-            .padding(12.dp),
+        modifier = Modifier.requiredSize(110.dp),
+        contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = colorScheme.primary
         )
     ) {
-        Text(text = "Eat!", fontSize = 24.sp)
+        Text(text = "Eat!", fontSize = 22.sp)
     }
 }
 
@@ -490,7 +589,7 @@ fun FavoritePlace(modifier: Modifier = Modifier, placeName: String?, lat: Double
             lineHeight = 22.sp,
             color = colorScheme.tertiary,
             modifier = if (canNavigate) Modifier.clickable {
-                val uri = "geo:$lat,$lng?q=$lat,$lng(${android.net.Uri.encode(placeName)})".toUri()
+                val uri = "geo:$lat,$lng?q=$lat,$lng(${Uri.encode(placeName)})".toUri()
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
             } else Modifier,
         )
@@ -512,6 +611,63 @@ fun MapButton(onClick: () -> Unit) {
             contentDescription = null,
         )
     }
+}
+
+@Composable
+private fun CameraButton(onClick: () -> Unit, enabled: Boolean = true) {
+    val darkTheme = isSystemInDarkTheme()
+    val green = if (darkTheme) LightCameraGreen else CameraGreen
+    val iconTint = if (darkTheme) Color.Black else Color.White
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = CircleShape,
+        modifier = Modifier.size(70.dp),
+        contentPadding = PaddingValues(0.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = green,
+            contentColor = iconTint,
+        ),
+    ) {
+        Icon(
+            imageVector = Icons.Default.CameraAlt,
+            contentDescription = "Scan burrito",
+        )
+    }
+}
+
+@Composable
+private fun CameraRationaleDialog(onDismiss: () -> Unit, onAllow: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .wrapContentWidth()
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(16.dp),
+            color = colorScheme.surface,
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Camera needed", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "The camera is used to verify your burrito before logging it.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Not now") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = onAllow) { Text("Allow") }
+                }
+            }
+        }
+    }
+}
+
+private fun createPhotoUri(context: Context): Uri {
+    val dir = File(context.cacheDir, "burrito_photos").also { it.mkdirs() }
+    val file = File(dir, "classify_${System.currentTimeMillis()}.jpg")
+    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
 @Preview(showBackground = true, heightDp = 200)

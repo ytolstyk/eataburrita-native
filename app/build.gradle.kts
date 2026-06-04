@@ -85,6 +85,9 @@ secrets {
 }
 
 dependencies {
+    implementation(libs.coil.compose)
+    implementation(libs.mlkit.image.labeling)
+    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.hilt.android)
     implementation(libs.androidx.lifecycle.viewmodel)
     // LiveData

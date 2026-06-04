@@ -26,6 +26,9 @@ room = "2.7.1"
 workManager = "2.9.1"
 mockk = "1.13.12"
 kotlinxCoroutinesTest = "1.9.0"
+coil = "2.7.0"
+mlkitImageLabeling = "17.0.9"
+kotlinxCoroutinesPlayServices = "1.9.0"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -69,6 +72,9 @@ androidx-hilt-work = { module = "androidx.hilt:hilt-work", version.ref = "androi
 androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidxHilt" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+mlkit-image-labeling = { group = "com.google.mlkit", name = "image-labeling", version.ref = "mlkitImageLabeling" }
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
 
 [plugins]
 secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }

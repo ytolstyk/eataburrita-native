@@ -33,3 +33,7 @@
 -keepclassmembers class <1>$$serializer {
     <fields>;
 }
+
+# ML Kit image labeling
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
