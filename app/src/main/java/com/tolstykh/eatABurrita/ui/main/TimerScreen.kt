@@ -113,6 +113,7 @@ fun TimerScreen(
 ) {
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
     val locationPickerOpen by viewModel.locationPickerOpen.collectAsStateWithLifecycle()
+    val sizePickerOpen by viewModel.sizePickerOpen.collectAsStateWithLifecycle()
     val currentLocation by viewModel.currentUserLocation.collectAsStateWithLifecycle()
     val dayLocationModal by viewModel.dayLocationModal.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -326,6 +327,13 @@ fun TimerScreen(
             onConfirm = { name, lat, lng -> viewModel.confirmAddBurrito(name, lat, lng) },
             onCancel = { viewModel.cancelAddBurrito() },
             onDontShowAgain = { viewModel.disableLocationModal() },
+        )
+    }
+
+    if (sizePickerOpen) {
+        SizePickerModal(
+            onConfirm = { kcal -> viewModel.onSizeConfirmed(kcal) },
+            onSkip = { viewModel.onSizeSkipped() },
         )
     }
 

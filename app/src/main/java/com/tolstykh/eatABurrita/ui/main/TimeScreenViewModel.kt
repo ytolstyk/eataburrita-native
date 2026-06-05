@@ -101,6 +101,13 @@ class TimeScreenViewModel @Inject constructor(
     private val _locationPickerOpen = MutableStateFlow(false)
     val locationPickerOpen: StateFlow<Boolean> = _locationPickerOpen.asStateFlow()
 
+    private val _sizePickerOpen = MutableStateFlow(false)
+    val sizePickerOpen: StateFlow<Boolean> = _sizePickerOpen.asStateFlow()
+
+    private var _pendingLocationName: String? = null
+    private var _pendingLocationLat: Double? = null
+    private var _pendingLocationLng: Double? = null
+
     private val _currentLocation = MutableStateFlow<LatLng?>(null)
     val currentUserLocation: StateFlow<LatLng?> = _currentLocation.asStateFlow()
 
@@ -127,31 +134,57 @@ class TimeScreenViewModel @Inject constructor(
             if (appPrefs.showLocationModal.first()) {
                 _locationPickerOpen.value = true
             } else {
-                dao.insert(BurritoEntry(timestamp = Instant.now().toEpochMilli()))
-                appPrefs.resetNotificationSentFlags()
+                _pendingLocationName = null
+                _pendingLocationLat = null
+                _pendingLocationLng = null
+                _sizePickerOpen.value = true
             }
         }
     }
 
     fun confirmAddBurrito(name: String?, lat: Double?, lng: Double?) {
         _locationPickerOpen.value = false
+        _pendingLocationName = name
+        _pendingLocationLat = lat
+        _pendingLocationLng = lng
+        _sizePickerOpen.value = true
+    }
+
+    fun cancelAddBurrito() {
+        _locationPickerOpen.value = false
+        _pendingLocationName = null
+        _pendingLocationLat = null
+        _pendingLocationLng = null
+        _sizePickerOpen.value = true
+    }
+
+    fun onSizeConfirmed(calories: Int) {
+        _sizePickerOpen.value = false
         viewModelScope.launch {
             dao.insert(
                 BurritoEntry(
                     timestamp = Instant.now().toEpochMilli(),
-                    locationName = name,
-                    locationLat = lat,
-                    locationLong = lng,
+                    locationName = _pendingLocationName,
+                    locationLat = _pendingLocationLat,
+                    locationLong = _pendingLocationLng,
+                    calories = calories,
                 )
             )
             appPrefs.resetNotificationSentFlags()
         }
     }
 
-    fun cancelAddBurrito() {
-        _locationPickerOpen.value = false
+    fun onSizeSkipped() {
+        _sizePickerOpen.value = false
         viewModelScope.launch {
-            dao.insert(BurritoEntry(timestamp = Instant.now().toEpochMilli()))
+            dao.insert(
+                BurritoEntry(
+                    timestamp = Instant.now().toEpochMilli(),
+                    locationName = _pendingLocationName,
+                    locationLat = _pendingLocationLat,
+                    locationLong = _pendingLocationLng,
+                )
+            )
             appPrefs.resetNotificationSentFlags()
         }
     }

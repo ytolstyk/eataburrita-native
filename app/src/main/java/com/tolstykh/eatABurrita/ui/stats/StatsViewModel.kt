@@ -26,6 +26,7 @@ data class StatsData(
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
     val avgPerWeek: Float = 0f,
+    val totalCalories: Int = 0,
 )
 
 @HiltViewModel
@@ -38,11 +39,12 @@ class StatsViewModel @Inject constructor(
     private val twelveMonthsAgo = YearMonth.now(zone).minusMonths(12)
         .atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
 
-    // Group 1: summary — total count, distinct days (for streaks + avg/week)
+    // Group 1: summary — total count, distinct days (for streaks + avg/week), total calories
     private val summaryFlow = combine(
         dao.getCount(),
         dao.getDistinctDays(),
-    ) { count, dayStrings ->
+        dao.getTotalCalories(),
+    ) { count, dayStrings, totalCalories ->
         val today = LocalDate.now(zone)
         val days = dayStrings.map { LocalDate.parse(it.day) }
         val daySet = days.toHashSet()
@@ -63,7 +65,7 @@ class StatsViewModel @Inject constructor(
             count.toFloat() / weeksSince
         }
 
-        Triple(count, Triple(currentStreak, bestStreak, avgPerWeek), Unit)
+        Triple(count, Triple(currentStreak, bestStreak, avgPerWeek), totalCalories)
     }
 
     // Group 2: chart data — daily, day-of-week, hour, monthly, locations
@@ -108,7 +110,7 @@ class StatsViewModel @Inject constructor(
 
     @Suppress("UNCHECKED_CAST")
     val statsData: StateFlow<StatsData> = combine(summaryFlow, chartFlow) { summary, charts ->
-        val (count, streakData, _) = summary
+        val (count, streakData, totalCalories) = summary
         val (currentStreak, bestStreak, avgPerWeek) = streakData
 
         StatsData(
@@ -121,6 +123,7 @@ class StatsViewModel @Inject constructor(
             currentStreak = currentStreak,
             bestStreak = bestStreak,
             avgPerWeek = avgPerWeek,
+            totalCalories = totalCalories,
         )
     }.stateIn(
         viewModelScope,

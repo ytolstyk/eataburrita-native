@@ -1,16 +1,19 @@
 package com.tolstykh.eatABurrita.ui.main
 
+import com.tolstykh.eatABurrita.classifier.BurritoClassifier
+import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.data.BurritoDao
 import com.tolstykh.eatABurrita.data.BurritoEntry
+import com.tolstykh.eatABurrita.location.GetLocationUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -28,11 +31,20 @@ class TimeScreenViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var dao: BurritoDao
+    private lateinit var appPrefs: AppPreferencesRepository
+    private lateinit var getLocationUseCase: GetLocationUseCase
+    private lateinit var burritoClassifier: BurritoClassifier
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         dao = mockk()
+        appPrefs = mockk(relaxed = true)
+        getLocationUseCase = mockk()
+        burritoClassifier = mockk()
+        every { getLocationUseCase.invoke() } returns emptyFlow()
+        every { appPrefs.showLocationModal } returns flowOf(true)
+        every { appPrefs.notificationPermissionAsked } returns flowOf(false)
     }
 
     @After
@@ -48,12 +60,15 @@ class TimeScreenViewModelTest {
         every { dao.getCount() } returns flowOf(count)
         every { dao.getLatestTimestamp() } returns flowOf(timestamp)
         every { dao.getEntriesSince(any()) } returns flowOf(entries)
+        every { dao.getEntriesWithLocation() } returns flowOf(emptyList())
     }
+
+    private fun makeViewModel() = TimeScreenViewModel(dao, appPrefs, getLocationUseCase, burritoClassifier)
 
     @Test
     fun initialState_isLoading() {
         stubDao()
-        val viewModel = TimeScreenViewModel(dao)
+        val viewModel = makeViewModel()
         assertEquals(TimeScreenViewModel.TimeScreenUIState.Loading, viewModel.timeScreenState.value)
     }
 
@@ -61,7 +76,7 @@ class TimeScreenViewModelTest {
     fun state_emitsSuccess_afterCollection() = runTest(testDispatcher) {
         stubDao(count = 3, timestamp = 1_000_000L)
 
-        val viewModel = TimeScreenViewModel(dao)
+        val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()
         val job = launch { viewModel.timeScreenState.collect { states.add(it) } }
         advanceUntilIdle()
@@ -74,7 +89,7 @@ class TimeScreenViewModelTest {
     fun state_success_containsCorrectCount() = runTest(testDispatcher) {
         stubDao(count = 7)
 
-        val viewModel = TimeScreenViewModel(dao)
+        val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()
         val job = launch { viewModel.timeScreenState.collect { states.add(it) } }
         advanceUntilIdle()
@@ -88,7 +103,7 @@ class TimeScreenViewModelTest {
     fun state_success_containsCorrectTimestamp() = runTest(testDispatcher) {
         stubDao(timestamp = 9_999_999L)
 
-        val viewModel = TimeScreenViewModel(dao)
+        val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()
         val job = launch { viewModel.timeScreenState.collect { states.add(it) } }
         advanceUntilIdle()
@@ -102,7 +117,7 @@ class TimeScreenViewModelTest {
     fun state_success_nullTimestamp_mapsToZero() = runTest(testDispatcher) {
         stubDao(timestamp = null)
 
-        val viewModel = TimeScreenViewModel(dao)
+        val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()
         val job = launch { viewModel.timeScreenState.collect { states.add(it) } }
         advanceUntilIdle()
@@ -116,7 +131,7 @@ class TimeScreenViewModelTest {
     fun state_dailyCounts_has30Elements() = runTest(testDispatcher) {
         stubDao()
 
-        val viewModel = TimeScreenViewModel(dao)
+        val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()
         val job = launch { viewModel.timeScreenState.collect { states.add(it) } }
         advanceUntilIdle()
@@ -131,8 +146,9 @@ class TimeScreenViewModelTest {
         every { dao.getCount() } returns flow { throw RuntimeException("DB failure") }
         every { dao.getLatestTimestamp() } returns flowOf(null)
         every { dao.getEntriesSince(any()) } returns flowOf(emptyList())
+        every { dao.getEntriesWithLocation() } returns flowOf(emptyList())
 
-        val viewModel = TimeScreenViewModel(dao)
+        val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()
         val job = launch { viewModel.timeScreenState.collect { states.add(it) } }
         advanceUntilIdle()
@@ -142,12 +158,12 @@ class TimeScreenViewModelTest {
     }
 
     @Test
-    fun addBurrito_callsDaoInsert() = runTest(testDispatcher) {
+    fun onSizeConfirmed_callsDaoInsert() = runTest(testDispatcher) {
         stubDao()
         coEvery { dao.insert(any<BurritoEntry>()) } returns Unit
 
-        val viewModel = TimeScreenViewModel(dao)
-        viewModel.addBurrito()
+        val viewModel = makeViewModel()
+        viewModel.onSizeConfirmed(760)
         advanceUntilIdle()
 
         coVerify { dao.insert(any<BurritoEntry>()) }

@@ -83,4 +83,7 @@ interface BurritoDao {
 
     @Query("SELECT DISTINCT date(datetime(timestamp/1000, 'unixepoch', 'localtime')) as day FROM burrito_entries ORDER BY day ASC")
     fun getDistinctDays(): Flow<List<DayString>>
+
+    @Query("SELECT COALESCE(SUM(calories), 0) FROM burrito_entries WHERE calories IS NOT NULL")
+    fun getTotalCalories(): Flow<Int>
 }

@@ -101,6 +101,11 @@ fun StatsScreen(
 
             SummarySection(stats)
 
+            if (stats.totalCalories > 0) {
+                Spacer(Modifier.height(16.dp))
+                CalorieBankSection(stats.totalCalories)
+            }
+
             Spacer(Modifier.height(28.dp))
 
             StatSectionTitle("Last 30 Days")
@@ -221,6 +226,53 @@ private fun StatChip(label: String, value: String, modifier: Modifier = Modifier
                 color = colorScheme.primary,
             )
         }
+    }
+}
+
+@Composable
+private fun CalorieBankSection(calories: Int) {
+    val teslaDays = calories / 15_767
+    val netflixHours = (calories / 38.1).toInt()
+    val stairFlights = (calories * 2.494).toInt()
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = colorScheme.primaryContainer,
+        tonalElevation = 2.dp,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Calorie Bank",
+                style = MaterialTheme.typography.labelMedium,
+                color = colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+            )
+            Text(
+                "%,d kcal".format(calories),
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onPrimaryContainer,
+            )
+            Spacer(Modifier.height(10.dp))
+            CalorieEquivalentRow("⚡", "= enough to power a Tesla for $teslaDays days")
+            Spacer(Modifier.height(4.dp))
+            CalorieEquivalentRow("📺", "= %,d hours of Netflix".format(netflixHours))
+            Spacer(Modifier.height(4.dp))
+            CalorieEquivalentRow("🪜", "= %,d flights of stairs".format(stairFlights))
+        }
+    }
+}
+
+@Composable
+private fun CalorieEquivalentRow(icon: String, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(icon, fontSize = 16.sp)
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+        )
     }
 }
 
