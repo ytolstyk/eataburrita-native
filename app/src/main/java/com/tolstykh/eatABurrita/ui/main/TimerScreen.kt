@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Menu
@@ -81,11 +82,16 @@ import com.tolstykh.eatABurrita.ui.theme.CameraGreen
 import com.tolstykh.eatABurrita.ui.theme.LightCameraGreen
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.LocalDate
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
@@ -216,7 +222,10 @@ fun TimerScreen(
                 lat = data.favoritePlaceLat,
                 lng = data.favoritePlaceLng,
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            val todayFact = remember { BURRITO_FACTS[LocalDate.now().dayOfYear % BURRITO_FACTS.size] }
+            BurritoFactCard(fact = todayFact)
+            Spacer(modifier = Modifier.height(12.dp))
             BurritoConsumptionChart(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -361,6 +370,66 @@ fun TimerScreen(
                 cameraPermissionState.launchPermissionRequest()
             },
         )
+    }
+}
+
+@Composable
+fun BurritoFactCard(fact: String, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        AnimatedVisibility(
+            visible = !expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically(),
+        ) {
+            Text(
+                text = "See a random burrito fact →",
+                color = colorScheme.primary,
+                fontSize = 16.sp,
+                modifier = Modifier
+                    .clickable { expanded = true }
+                    .padding(vertical = 4.dp),
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically(),
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = colorScheme.primaryContainer,
+                tonalElevation = 2.dp,
+                onClick = { expanded = false },
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = colorScheme.onPrimaryContainer,
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Burrito Fact",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colorScheme.onPrimaryContainer,
+                        )
+                        Text(
+                            text = fact,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                            color = colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
