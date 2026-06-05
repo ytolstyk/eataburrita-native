@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.17] - 2026-06-05
+
+### Added
+- Burrito facts
+
+## [1.16] - 2026-05-XX
+
+### Added
+- Calories calculator
+- Burrito-or-not camera feature
+
 ## [1.15] - 2026-03-31
 
 ### Added
