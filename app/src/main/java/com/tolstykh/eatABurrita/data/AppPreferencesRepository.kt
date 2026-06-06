@@ -22,6 +22,7 @@ class AppPreferencesRepository @Inject constructor(
     private val threeDayNotifiedKey = booleanPreferencesKey("three_day_notified")
     private val sevenDayNotifiedKey = booleanPreferencesKey("seven_day_notified")
     private val checkedIngredientsKey = stringSetPreferencesKey("checked_ingredients")
+    private val unlockedAchievementsKey = stringSetPreferencesKey("unlocked_achievements")
 
     val isDarkMode: Flow<Boolean> = context.appPrefsDataStore.data
         .map { prefs -> prefs[darkModeKey] ?: false }
@@ -43,6 +44,9 @@ class AppPreferencesRepository @Inject constructor(
 
     val checkedIngredients: Flow<Set<String>> = context.appPrefsDataStore.data
         .map { prefs -> prefs[checkedIngredientsKey] ?: emptySet() }
+
+    val unlockedAchievements: Flow<Set<String>> = context.appPrefsDataStore.data
+        .map { prefs -> prefs[unlockedAchievementsKey] ?: emptySet() }
 
     suspend fun setDarkMode(dark: Boolean) {
         context.appPrefsDataStore.edit { prefs ->
@@ -92,6 +96,13 @@ class AppPreferencesRepository @Inject constructor(
         context.appPrefsDataStore.edit { prefs ->
             val current = prefs[checkedIngredientsKey] ?: emptySet()
             prefs[checkedIngredientsKey] = current.filterNot { it.startsWith("${recipeId}_") }.toSet()
+        }
+    }
+
+    suspend fun markAchievementsUnlocked(ids: Set<String>) {
+        context.appPrefsDataStore.edit { prefs ->
+            val current = prefs[unlockedAchievementsKey] ?: emptySet()
+            prefs[unlockedAchievementsKey] = current + ids
         }
     }
 

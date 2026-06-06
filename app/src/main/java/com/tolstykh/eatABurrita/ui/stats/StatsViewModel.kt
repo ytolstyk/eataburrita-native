@@ -2,12 +2,14 @@ package com.tolstykh.eatABurrita.ui.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.data.BurritoDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -27,11 +29,14 @@ data class StatsData(
     val bestStreak: Int = 0,
     val avgPerWeek: Float = 0f,
     val totalCalories: Int = 0,
+    val distinctLocationCount: Int = 0,
+    val achievements: List<Achievement> = emptyList(),
 )
 
 @HiltViewModel
 class StatsViewModel @Inject constructor(
     private val dao: BurritoDao,
+    private val prefs: AppPreferencesRepository,
 ) : ViewModel() {
 
     private val zone = ZoneId.systemDefault()
@@ -39,12 +44,13 @@ class StatsViewModel @Inject constructor(
     private val twelveMonthsAgo = YearMonth.now(zone).minusMonths(12)
         .atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
 
-    // Group 1: summary — total count, distinct days (for streaks + avg/week), total calories
+    // Group 1: summary — total count, distinct days (for streaks + avg/week), total calories, distinct locations
     private val summaryFlow = combine(
         dao.getCount(),
         dao.getDistinctDays(),
         dao.getTotalCalories(),
-    ) { count, dayStrings, totalCalories ->
+        dao.getDistinctLocationCount(),
+    ) { count, dayStrings, totalCalories, distinctLocationCount ->
         val today = LocalDate.now(zone)
         val days = dayStrings.map { LocalDate.parse(it.day) }
         val daySet = days.toHashSet()
@@ -65,7 +71,10 @@ class StatsViewModel @Inject constructor(
             count.toFloat() / weeksSince
         }
 
-        Triple(count, Triple(currentStreak, bestStreak, avgPerWeek), totalCalories)
+        Pair(
+            Triple(count, Triple(currentStreak, bestStreak, avgPerWeek), totalCalories),
+            distinctLocationCount,
+        )
     }
 
     // Group 2: chart data — daily, day-of-week, hour, monthly, locations
@@ -110,10 +119,11 @@ class StatsViewModel @Inject constructor(
 
     @Suppress("UNCHECKED_CAST")
     val statsData: StateFlow<StatsData> = combine(summaryFlow, chartFlow) { summary, charts ->
-        val (count, streakData, totalCalories) = summary
+        val (summaryCore, distinctLocationCount) = summary
+        val (count, streakData, totalCalories) = summaryCore
         val (currentStreak, bestStreak, avgPerWeek) = streakData
 
-        StatsData(
+        val base = StatsData(
             totalCount = count,
             dailyCounts = charts[0] as List<Int>,
             dayOfWeekCounts = charts[1] as List<Int>,
@@ -124,10 +134,30 @@ class StatsViewModel @Inject constructor(
             bestStreak = bestStreak,
             avgPerWeek = avgPerWeek,
             totalCalories = totalCalories,
+            distinctLocationCount = distinctLocationCount,
         )
+        base.copy(achievements = computeAchievements(base, distinctLocationCount))
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
         StatsData(),
     )
+
+    val newlyUnlockedAchievements: StateFlow<List<Achievement>> = combine(
+        statsData,
+        prefs.unlockedAchievements,
+    ) { stats, seenIds ->
+        stats.achievements.filter { it.isUnlocked && it.id !in seenIds }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList(),
+    )
+
+    fun markAchievementsSeen() {
+        viewModelScope.launch {
+            val ids = statsData.value.achievements.filter { it.isUnlocked }.map { it.id }.toSet()
+            prefs.markAchievementsUnlocked(ids)
+        }
+    }
 }

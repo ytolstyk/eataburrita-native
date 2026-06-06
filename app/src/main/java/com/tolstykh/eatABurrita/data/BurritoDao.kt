@@ -86,4 +86,7 @@ interface BurritoDao {
 
     @Query("SELECT COALESCE(SUM(calories), 0) FROM burrito_entries WHERE calories IS NOT NULL")
     fun getTotalCalories(): Flow<Int>
+
+    @Query("SELECT COUNT(DISTINCT locationName) FROM burrito_entries WHERE locationName IS NOT NULL AND locationName != ''")
+    fun getDistinctLocationCount(): Flow<Int>
 }

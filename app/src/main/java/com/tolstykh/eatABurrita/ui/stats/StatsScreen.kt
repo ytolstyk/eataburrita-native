@@ -24,10 +24,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,122 +60,152 @@ fun StatsScreen(
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
     val stats by viewModel.statsData.collectAsStateWithLifecycle()
+    val newlyUnlocked by viewModel.newlyUnlockedAchievements.collectAsStateWithLifecycle()
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+
+    if (newlyUnlocked.isNotEmpty()) {
+        AchievementUnlockedDialog(
+            achievements = newlyUnlocked,
+            onDismiss = { viewModel.markAchievementsSeen() },
+        )
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            Spacer(Modifier.height(40.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBackPressed) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-                Text("Stats", style = MaterialTheme.typography.headlineMedium)
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            if (stats.totalCount == 0) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                        .padding(vertical = 64.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "No stats yet",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = colorScheme.onSurface,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "Start logging burritos to see your stats here.",
-                            fontSize = 14.sp,
-                            color = colorScheme.onSurface.copy(alpha = 0.55f),
-                            textAlign = TextAlign.Center,
-                        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Fixed header
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Spacer(Modifier.height(40.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBackPressed) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
+                    Text("Stats", style = MaterialTheme.typography.headlineMedium)
                 }
-            } else {
-
-            SummarySection(stats)
-
-            if (stats.totalCalories > 0) {
-                Spacer(Modifier.height(16.dp))
-                CalorieBankSection(stats.totalCalories)
+                Spacer(Modifier.height(8.dp))
             }
 
-            Spacer(Modifier.height(28.dp))
-
-            StatSectionTitle("Last 30 Days")
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            BurritoConsumptionChart(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
-                dailyCounts = stats.dailyCounts,
-                textMeasurer = rememberTextMeasurer(),
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            StatSectionTitle("By Day of Week")
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            DayOfWeekChart(
-                counts = stats.dayOfWeekCounts,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp),
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            StatSectionTitle("Time of Day")
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            HourOfDayChart(
-                counts = stats.hourOfDayCounts,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            StatSectionTitle("Monthly Trend")
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            MonthlyChart(
-                months = stats.monthlyCounts,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp),
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            StatSectionTitle("Top Spots")
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            if (stats.topLocations.isEmpty()) {
-                Text(
-                    "No location data yet",
-                    color = colorScheme.onSurface.copy(alpha = 0.45f),
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(vertical = 8.dp),
+            // Sticky tabs
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Stats") },
                 )
-            } else {
-                TopLocationsChart(
-                    locations = stats.topLocations,
-                    modifier = Modifier.fillMaxWidth(),
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Achievements") },
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            // Scrollable content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+            ) {
+                if (selectedTab == 0) {
+                    if (stats.totalCount == 0) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 64.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "No stats yet",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = colorScheme.onSurface,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "Start logging burritos to see your stats here.",
+                                    fontSize = 14.sp,
+                                    color = colorScheme.onSurface.copy(alpha = 0.55f),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    } else {
+                        SummarySection(stats)
 
-            } // end else (totalCount > 0)
+                        if (stats.totalCalories > 0) {
+                            Spacer(Modifier.height(16.dp))
+                            CalorieBankSection(stats.totalCalories)
+                        }
+
+                        Spacer(Modifier.height(28.dp))
+
+                        StatSectionTitle("Last 30 Days")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        BurritoConsumptionChart(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp),
+                            dailyCounts = stats.dailyCounts,
+                            textMeasurer = rememberTextMeasurer(),
+                        )
+
+                        Spacer(Modifier.height(28.dp))
+
+                        StatSectionTitle("By Day of Week")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        DayOfWeekChart(
+                            counts = stats.dayOfWeekCounts,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp),
+                        )
+
+                        Spacer(Modifier.height(28.dp))
+
+                        StatSectionTitle("Time of Day")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        HourOfDayChart(
+                            counts = stats.hourOfDayCounts,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                        )
+
+                        Spacer(Modifier.height(28.dp))
+
+                        StatSectionTitle("Monthly Trend")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        MonthlyChart(
+                            months = stats.monthlyCounts,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp),
+                        )
+
+                        Spacer(Modifier.height(28.dp))
+
+                        StatSectionTitle("Top Spots")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        if (stats.topLocations.isEmpty()) {
+                            Text(
+                                "No location data yet",
+                                color = colorScheme.onSurface.copy(alpha = 0.45f),
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                            )
+                        } else {
+                            TopLocationsChart(
+                                locations = stats.topLocations,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        Spacer(Modifier.height(32.dp))
+                    }
+                } else {
+                    AchievementsSection(achievements = stats.achievements)
+                    Spacer(Modifier.height(32.dp))
+                }
+            }
         }
     }
 }
