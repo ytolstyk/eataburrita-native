@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -86,6 +85,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -722,7 +722,7 @@ fun MapButton(onClick: () -> Unit) {
 
 @Composable
 private fun CameraButton(onClick: () -> Unit, enabled: Boolean = true) {
-    val darkTheme = isSystemInDarkTheme()
+    val darkTheme = colorScheme.surface.luminance() < 0.5f
     val green = if (darkTheme) LightCameraGreen else CameraGreen
     val iconTint = if (darkTheme) Color.Black else Color.White
     Button(
