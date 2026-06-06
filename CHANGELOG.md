@@ -2,8 +2,7 @@
 
 ## [Unreleased]
 
-### Fixed
-- Map no longer stays stuck at 0,0 on open due to a race condition between camera position saving and initial centering
+## [1.20] - 2026-06-06
 
 ### Added
 - Burrito Photo Log — attach an optional photo (camera or gallery) to each burrito entry; thumbnails shown in the entry history (Settings) and on the map location tray
@@ -15,6 +14,9 @@
 - Streak Milestone notifications — push notification when hitting 7, 14, 30, or 50-day consecutive streaks
 - Weekly Recap notifications — Monday morning digest of last week's burrito count
 - Granular notification settings — each notification type (burrito reminders, nearby spot alerts, streak milestones, weekly recap) can be toggled independently in Settings
+
+### Fixed
+- Map no longer stays stuck at 0,0 on open due to a race condition between camera position saving and initial centering
 
 ## [1.18] - 2026-06-05
 
