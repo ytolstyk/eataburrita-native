@@ -23,20 +23,23 @@ class BurritoClassifier @Inject constructor(
     companion object {
         private val BURRITO_LABELS = setOf(
             "Burrito", "Wrap", "Tortilla", "Mexican food", "Taco", "Tex-Mex",
+            "Enchilada", "Fajita", "Quesadilla", "Burrito bowl",
         )
-        private const val CONFIDENCE_THRESHOLD = 0.4f
+        private const val FETCH_THRESHOLD = 0.15f
+        private const val MATCH_THRESHOLD = 0.25f
     }
 
     suspend fun classify(photoUri: Uri): ClassificationOutcome {
         return try {
             val image = InputImage.fromFilePath(context, photoUri)
             val options = ImageLabelerOptions.Builder()
-                .setConfidenceThreshold(CONFIDENCE_THRESHOLD)
+                .setConfidenceThreshold(FETCH_THRESHOLD)
                 .build()
             val labeler = ImageLabeling.getClient(options)
             val labels = labeler.process(image).await()
             val best = labels
                 .filter { label -> BURRITO_LABELS.any { it.equals(label.text, ignoreCase = true) } }
+                .filter { it.confidence >= MATCH_THRESHOLD }
                 .maxByOrNull { it.confidence }
             if (best != null) {
                 ClassificationOutcome.Success(best.confidence, best.text)
