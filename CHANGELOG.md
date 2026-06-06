@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Burrito scanner now uses the Google food_V1 TFLite model (2023 food labels) via TensorFlow Lite Task Vision — fully on-device, no API key, works offline
 
 ## [1.20] - 2026-06-06
 

@@ -339,7 +339,7 @@ class TimeScreenViewModel @Inject constructor(
     sealed interface BurritoVerdictState {
         data object None : BurritoVerdictState
         data object Classifying : BurritoVerdictState
-        data class Verdict(val confidence: Float, val label: String) : BurritoVerdictState
+        data class Verdict(val isBurrito: Boolean, val confidence: Float, val comment: String) : BurritoVerdictState
         data object Failure : BurritoVerdictState
     }
 
@@ -350,8 +350,7 @@ class TimeScreenViewModel @Inject constructor(
         _verdictState.value = BurritoVerdictState.Classifying
         viewModelScope.launch {
             _verdictState.value = when (val outcome = burritoClassifier.classify(photoUri)) {
-                is ClassificationOutcome.Success -> BurritoVerdictState.Verdict(outcome.confidence, outcome.label)
-                is ClassificationOutcome.NoMatch -> BurritoVerdictState.Verdict(0f, "")
+                is ClassificationOutcome.Success -> BurritoVerdictState.Verdict(outcome.isBurrito, outcome.confidence, outcome.comment)
                 is ClassificationOutcome.Failure -> BurritoVerdictState.Failure
             }
         }

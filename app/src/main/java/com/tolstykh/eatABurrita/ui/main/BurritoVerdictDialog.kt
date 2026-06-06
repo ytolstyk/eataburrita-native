@@ -68,28 +68,17 @@ fun BurritoVerdictDialog(
         }
 
         is TimeScreenViewModel.BurritoVerdictState.Verdict -> {
+            val isBurrito = verdictState.isBurrito
             val confidence = verdictState.confidence
             val percent = (confidence * 100).toInt()
+            val comment = verdictState.comment
 
-            val title: String
-            val message: String
-            val showAddButton: Boolean
-            when {
-                confidence >= 0.70f -> {
-                    title = "Confirmed Burrito!"
-                    message = "That is clearly a burrito. +1 logged."
-                    showAddButton = true
-                }
-                confidence >= 0.40f -> {
-                    title = "Burrito confidence: $percent%"
-                    message = "We'll allow it."
-                    showAddButton = true
-                }
-                else -> {
-                    title = "That's not a burrito."
-                    message = "Nice try."
-                    showAddButton = false
-                }
+            val title = when {
+                isBurrito && confidence >= 0.70f -> "Confirmed Burrito!"
+                isBurrito && confidence >= 0.40f -> "Burrito confidence: $percent%"
+                isBurrito -> "Questionable, but we'll allow it."
+                confidence >= 0.70f -> "Definitely not a burrito."
+                else -> "That's not a burrito."
             }
 
             val context = LocalContext.current
@@ -104,8 +93,10 @@ fun BurritoVerdictDialog(
                         PhotoPreview(photoUri)
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(title, style = MaterialTheme.typography.titleLarge)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(message, style = MaterialTheme.typography.bodyMedium)
+                        if (comment.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(comment, style = MaterialTheme.typography.bodyMedium)
+                        }
                         Spacer(modifier = Modifier.height(20.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -113,7 +104,8 @@ fun BurritoVerdictDialog(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             IconButton(onClick = {
-                                val text = getBurritoVerdictShareMessage(confidence)
+                                val shareConfidence = if (isBurrito) confidence else 0f
+                                val text = getBurritoVerdictShareMessage(shareConfidence)
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     putExtra(Intent.EXTRA_TEXT, text)
                                     type = "text/plain"
@@ -124,7 +116,7 @@ fun BurritoVerdictDialog(
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             TextButton(onClick = onDismiss) { Text("Dismiss") }
-                            if (showAddButton) {
+                            if (isBurrito) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Button(onClick = onAddEntry) { Text("Log Burrito") }
                             }

@@ -69,12 +69,19 @@ android {
         buildConfig = true
     }
 
+    androidResources {
+        noCompress += "tflite"
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/*"
             merges += "META-INF/LICENSE.md"
             merges += "META-INF/LICENSE-notice.md"
             excludes += "META-INF/gradle/incremental.annotation.processors"
+        }
+        jniLibs {
+            pickFirsts += "**/*.so"
         }
     }
 }
@@ -86,7 +93,7 @@ secrets {
 
 dependencies {
     implementation(libs.coil.compose)
-    implementation(libs.mlkit.image.labeling)
+    implementation(libs.tensorflow.lite.task.vision)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.hilt.android)
     implementation(libs.androidx.lifecycle.viewmodel)
