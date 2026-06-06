@@ -132,6 +132,7 @@ fun TimerScreen(
         }
     }
     val verdictState by viewModel.verdictState.collectAsStateWithLifecycle()
+    val celebrationState by viewModel.celebrationState.collectAsStateWithLifecycle()
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showCameraRationale by remember { mutableStateOf(false) }
     val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
@@ -327,6 +328,24 @@ fun TimerScreen(
             )
         }
     }
+        if (celebrationState is TimeScreenViewModel.CelebrationState.EmojiRain) {
+            val rainKey = remember(celebrationState) { System.nanoTime().toString() }
+            com.tolstykh.eatABurrita.ui.components.EmojiRainCanvas(
+                modifier = Modifier.fillMaxSize(),
+                key = rainKey,
+            )
+            LaunchedEffect(celebrationState) {
+                delay(3500L)
+                viewModel.dismissCelebration()
+            }
+        }
+        if (celebrationState is TimeScreenViewModel.CelebrationState.StreakMilestone) {
+            val milestoneState = celebrationState as TimeScreenViewModel.CelebrationState.StreakMilestone
+            com.tolstykh.eatABurrita.ui.components.StreakMilestoneOverlay(
+                days = milestoneState.days,
+                onDismiss = viewModel::dismissCelebration,
+            )
+        }
     } // end Box
 
     if (locationPickerOpen) {

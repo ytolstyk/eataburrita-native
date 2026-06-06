@@ -161,6 +161,7 @@ class TimeScreenViewModelTest {
     fun onSizeConfirmed_callsDaoInsert() = runTest(testDispatcher) {
         stubDao()
         coEvery { dao.insert(any<BurritoEntry>()) } returns Unit
+        coEvery { dao.getDistinctDaysOnce() } returns emptyList()
 
         val viewModel = makeViewModel()
         viewModel.onSizeConfirmed(760)

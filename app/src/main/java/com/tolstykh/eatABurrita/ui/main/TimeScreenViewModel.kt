@@ -171,6 +171,7 @@ class TimeScreenViewModel @Inject constructor(
                 )
             )
             appPrefs.resetNotificationSentFlags()
+            computeAndTriggerCelebration()
         }
     }
 
@@ -186,6 +187,7 @@ class TimeScreenViewModel @Inject constructor(
                 )
             )
             appPrefs.resetNotificationSentFlags()
+            computeAndTriggerCelebration()
         }
     }
 
@@ -213,6 +215,39 @@ class TimeScreenViewModel @Inject constructor(
 
     fun dismissDayLocationModal() {
         _dayLocationModal.value = null
+    }
+
+    sealed interface CelebrationState {
+        data object None : CelebrationState
+        data object EmojiRain : CelebrationState
+        data class StreakMilestone(val days: Int) : CelebrationState
+    }
+
+    private val _celebrationState = MutableStateFlow<CelebrationState>(CelebrationState.None)
+    val celebrationState: StateFlow<CelebrationState> = _celebrationState.asStateFlow()
+
+    fun dismissCelebration() {
+        _celebrationState.value = CelebrationState.None
+    }
+
+    private val triggeredMilestonesThisSession = mutableSetOf<Int>()
+
+    private suspend fun computeAndTriggerCelebration() {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val days = dao.getDistinctDaysOnce().map { LocalDate.parse(it.day) }.toHashSet()
+        var currentStreak = 0
+        var d = today
+        while (d in days) { currentStreak++; d = d.minusDays(1) }
+        val milestone = listOf(100, 30, 7).firstOrNull {
+            currentStreak == it && it !in triggeredMilestonesThisSession
+        }
+        if (milestone != null) {
+            triggeredMilestonesThisSession.add(milestone)
+            _celebrationState.value = CelebrationState.StreakMilestone(milestone)
+        } else {
+            _celebrationState.value = CelebrationState.EmojiRain
+        }
     }
 
     sealed interface BurritoVerdictState {
