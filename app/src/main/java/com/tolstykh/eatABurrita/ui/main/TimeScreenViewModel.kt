@@ -3,6 +3,7 @@ package com.tolstykh.eatABurrita.ui.main
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
+import com.tolstykh.eatABurrita.helpers.copyToPhotoLog
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.tolstykh.eatABurrita.classifier.BurritoClassifier
@@ -157,6 +158,10 @@ class TimeScreenViewModel @Inject constructor(
     private val _sizePickerOpen = MutableStateFlow(false)
     val sizePickerOpen: StateFlow<Boolean> = _sizePickerOpen.asStateFlow()
 
+    private val _photoPickerOpen = MutableStateFlow(false)
+    val photoPickerOpen: StateFlow<Boolean> = _photoPickerOpen.asStateFlow()
+
+    private var _pendingCalories: Int = 0
     private var _pendingLocationName: String? = null
     private var _pendingLocationLat: Double? = null
     private var _pendingLocationLng: Double? = null
@@ -213,14 +218,29 @@ class TimeScreenViewModel @Inject constructor(
 
     fun onSizeConfirmed(calories: Int) {
         _sizePickerOpen.value = false
+        _pendingCalories = calories
+        _photoPickerOpen.value = true
+    }
+
+    fun onSizeSkipped() {
+        _sizePickerOpen.value = false
+        _pendingCalories = 0
+        _photoPickerOpen.value = true
+    }
+
+    fun onPhotoConfirmed(photoUri: Uri?) {
+        _photoPickerOpen.value = false
+        val calories = _pendingCalories
         viewModelScope.launch {
+            val savedPath = photoUri?.let { copyToPhotoLog(context, it) }
             dao.insert(
                 BurritoEntry(
                     timestamp = Instant.now().toEpochMilli(),
                     locationName = _pendingLocationName,
                     locationLat = _pendingLocationLat,
                     locationLong = _pendingLocationLng,
-                    calories = calories,
+                    calories = if (calories > 0) calories else null,
+                    photoPath = savedPath,
                 )
             )
             appPrefs.resetNotificationSentFlags()
@@ -228,8 +248,9 @@ class TimeScreenViewModel @Inject constructor(
         }
     }
 
-    fun onSizeSkipped() {
-        _sizePickerOpen.value = false
+    fun onPhotoSkipped() {
+        _photoPickerOpen.value = false
+        val calories = _pendingCalories
         viewModelScope.launch {
             dao.insert(
                 BurritoEntry(
@@ -237,6 +258,7 @@ class TimeScreenViewModel @Inject constructor(
                     locationName = _pendingLocationName,
                     locationLat = _pendingLocationLat,
                     locationLong = _pendingLocationLng,
+                    calories = if (calories > 0) calories else null,
                 )
             )
             appPrefs.resetNotificationSentFlags()

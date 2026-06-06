@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [BurritoEntry::class], version = 3)
+@Database(entities = [BurritoEntry::class], version = 4)
 abstract class BurritoDatabase : RoomDatabase() {
     abstract fun burritoDao(): BurritoDao
 
@@ -21,6 +21,12 @@ abstract class BurritoDatabase : RoomDatabase() {
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE burrito_entries ADD COLUMN calories INTEGER")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE burrito_entries ADD COLUMN photoPath TEXT")
             }
         }
     }

@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import java.io.File
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -111,6 +118,7 @@ fun MapScreen(
     )
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
     val placeStats by viewModel.placeStats.collectAsStateWithLifecycle()
+    val selectedPlacePhotos by viewModel.selectedPlacePhotos.collectAsStateWithLifecycle()
 
     Surface {
         LaunchedEffect(!context.hasLocationPermission()) {
@@ -208,6 +216,8 @@ fun MapScreen(
                             placeStats = placeStats,
                             getBurritoCount = viewModel::getBurritoCountForPlace,
                             getPlaceStats = viewModel::getPlaceStatsForPlace,
+                            selectedPlacePhotos = selectedPlacePhotos,
+                            onPlacePhotosRequested = viewModel::loadPhotosForPlace,
                         )
                     } else {
                         Box(modifier = Modifier.fillMaxSize()) {
@@ -254,6 +264,8 @@ fun FullMapView(
     placeStats: Map<String, MapScreenViewModel.PlaceStats> = emptyMap(),
     getBurritoCount: (Place, Map<String, MapScreenViewModel.PlaceStats>) -> Int = { _, _ -> 0 },
     getPlaceStats: (Place, Map<String, MapScreenViewModel.PlaceStats>) -> MapScreenViewModel.PlaceStats? = { _, _ -> null },
+    selectedPlacePhotos: List<String> = emptyList(),
+    onPlacePhotosRequested: (String?) -> Unit = {},
 ) {
     val marker = LatLng(currentPosition.latitude, currentPosition.longitude)
     val markerState = remember {
@@ -276,6 +288,7 @@ fun FullMapView(
         selectedPlace?.location?.let { loc ->
             cameraState.animate(CameraUpdateFactory.newLatLngZoom(loc, 16f), 350)
         }
+        onPlacePhotosRequested(selectedPlace?.displayName)
     }
 
     LaunchedEffect(key1 = currentPosition) {
@@ -372,6 +385,7 @@ fun FullMapView(
                         currentPosition = currentPosition,
                         burritoCount = stats?.count ?: 0,
                         lastTimestampAtPlace = stats?.lastTimestamp,
+                        photos = selectedPlacePhotos,
                         onNavigate = run {
                             val location = place.location
                             val name = place.displayName
@@ -548,6 +562,7 @@ fun PlaceBottomTray(
     currentPosition: LatLng,
     burritoCount: Int = 0,
     lastTimestampAtPlace: Long? = null,
+    photos: List<String> = emptyList(),
     onNavigate: (() -> Unit)?,
 ) {
     val address = readablePlaceAddress(place.addressComponents)
@@ -612,6 +627,21 @@ fun PlaceBottomTray(
                         style = MaterialTheme.typography.bodySmall,
                         color = colorScheme.onPrimary.copy(alpha = 0.8f),
                     )
+                }
+                if (photos.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(photos) { path ->
+                            AsyncImage(
+                                model = File(path),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                            )
+                        }
+                    }
                 }
             }
             if (onNavigate != null) {

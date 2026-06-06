@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Settings
@@ -116,10 +117,12 @@ fun TimerScreen(
     onOpenSettings: () -> Unit,
     onOpenStats: () -> Unit,
     onOpenRecipes: () -> Unit,
+    onOpenMemories: () -> Unit = {},
 ) {
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
     val locationPickerOpen by viewModel.locationPickerOpen.collectAsStateWithLifecycle()
     val sizePickerOpen by viewModel.sizePickerOpen.collectAsStateWithLifecycle()
+    val photoPickerOpen by viewModel.photoPickerOpen.collectAsStateWithLifecycle()
     val currentLocation by viewModel.currentUserLocation.collectAsStateWithLifecycle()
     val dayLocationModal by viewModel.dayLocationModal.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -150,6 +153,17 @@ fun TimerScreen(
             photoUri = null
         }
     }
+
+    var logPhotoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var logCameraTargetUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val takeLogPhotoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) logPhotoUri = logCameraTargetUri
+        logCameraTargetUri = null
+    }
+    val pickGalleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        logPhotoUri = uri
+    }
+
     val onCameraClick: () -> Unit = {
         when {
             cameraPermissionState.status.isGranted -> {
@@ -312,6 +326,11 @@ fun TimerScreen(
                 onClick = { menuExpanded = false; onOpenRecipes() },
             )
             DropdownMenuItem(
+                text = { Text("Memories") },
+                leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                onClick = { menuExpanded = false; onOpenMemories() },
+            )
+            DropdownMenuItem(
                 text = { Text("Settings") },
                 leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
                 onClick = { menuExpanded = false; onOpenSettings() },
@@ -352,6 +371,27 @@ fun TimerScreen(
         SizePickerModal(
             onConfirm = { kcal -> viewModel.onSizeConfirmed(kcal) },
             onSkip = { viewModel.onSizeSkipped() },
+        )
+    }
+
+    if (photoPickerOpen) {
+        PhotoPickerModal(
+            pendingPhotoUri = logPhotoUri,
+            onCamera = {
+                val uri = createLogPhotoUri(context)
+                logCameraTargetUri = uri
+                runCatching { takeLogPhotoLauncher.launch(uri) }
+            },
+            onGallery = { pickGalleryLauncher.launch("image/*") },
+            onConfirm = { uri ->
+                val finalUri = uri
+                logPhotoUri = null
+                viewModel.onPhotoConfirmed(finalUri)
+            },
+            onSkip = {
+                logPhotoUri = null
+                viewModel.onPhotoSkipped()
+            },
         )
     }
 
@@ -734,6 +774,12 @@ private fun CameraRationaleDialog(onDismiss: () -> Unit, onAllow: () -> Unit) {
 private fun createPhotoUri(context: Context): Uri {
     val dir = File(context.cacheDir, "burrito_photos").also { it.mkdirs() }
     val file = File(dir, "classify_${System.currentTimeMillis()}.jpg")
+    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+}
+
+private fun createLogPhotoUri(context: Context): Uri {
+    val dir = File(context.cacheDir, "burrito_photos").also { it.mkdirs() }
+    val file = File(dir, "log_${System.currentTimeMillis()}.jpg")
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 

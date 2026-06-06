@@ -11,4 +11,5 @@ data class BurritoEntry(
     val locationLong: Double? = null,
     val locationName: String? = null,
     val calories: Int? = null,
+    val photoPath: String? = null,
 )

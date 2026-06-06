@@ -112,4 +112,10 @@ interface BurritoDao {
 
     @Query("SELECT COUNT(DISTINCT locationName) FROM burrito_entries WHERE locationName IS NOT NULL AND locationName != ''")
     fun getDistinctLocationCount(): Flow<Int>
+
+    @Query("SELECT * FROM burrito_entries WHERE photoPath IS NOT NULL ORDER BY timestamp DESC")
+    fun getEntriesWithPhoto(): Flow<List<BurritoEntry>>
+
+    @Query("SELECT * FROM burrito_entries WHERE locationName = :locationName AND photoPath IS NOT NULL ORDER BY timestamp DESC LIMIT 6")
+    suspend fun getEntriesWithPhotoForLocation(locationName: String): List<BurritoEntry>
 }

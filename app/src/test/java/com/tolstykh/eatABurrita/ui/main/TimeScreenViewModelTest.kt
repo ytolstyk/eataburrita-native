@@ -169,15 +169,39 @@ class TimeScreenViewModelTest {
     }
 
     @Test
-    fun onSizeConfirmed_callsDaoInsert() = runTest(testDispatcher) {
+    fun onPhotoSkipped_callsDaoInsert() = runTest(testDispatcher) {
         stubDao()
         coEvery { dao.insert(any<BurritoEntry>()) } returns Unit
         coEvery { dao.getDistinctDaysOnce() } returns emptyList()
 
         val viewModel = makeViewModel()
         viewModel.onSizeConfirmed(760)
+        viewModel.onPhotoSkipped()
         advanceUntilIdle()
 
         coVerify { dao.insert(any<BurritoEntry>()) }
+    }
+
+    @Test
+    fun onPhotoConfirmed_withNullUri_callsDaoInsert() = runTest(testDispatcher) {
+        stubDao()
+        coEvery { dao.insert(any<BurritoEntry>()) } returns Unit
+        coEvery { dao.getDistinctDaysOnce() } returns emptyList()
+
+        val viewModel = makeViewModel()
+        viewModel.onSizeConfirmed(760)
+        viewModel.onPhotoConfirmed(null)
+        advanceUntilIdle()
+
+        coVerify { dao.insert(any<BurritoEntry>()) }
+    }
+
+    @Test
+    fun onSizeConfirmed_opensPhotoPicker() = runTest(testDispatcher) {
+        stubDao()
+        val viewModel = makeViewModel()
+        viewModel.onSizeConfirmed(760)
+
+        assertTrue(viewModel.photoPickerOpen.value)
     }
 }

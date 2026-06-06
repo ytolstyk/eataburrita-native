@@ -57,6 +57,7 @@ import com.tolstykh.eatABurrita.ui.main.BurritoConsumptionChart
 @Composable
 fun StatsScreen(
     onBackPressed: () -> Unit,
+    onOpenMemories: () -> Unit = {},
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
     val stats by viewModel.statsData.collectAsStateWithLifecycle()
@@ -75,11 +76,20 @@ fun StatsScreen(
             // Fixed header
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Spacer(Modifier.height(40.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onBackPressed) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                        Text("Stats", style = MaterialTheme.typography.headlineMedium)
                     }
-                    Text("Stats", style = MaterialTheme.typography.headlineMedium)
+                    androidx.compose.material3.TextButton(onClick = onOpenMemories) {
+                        Text("Memories")
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
             }

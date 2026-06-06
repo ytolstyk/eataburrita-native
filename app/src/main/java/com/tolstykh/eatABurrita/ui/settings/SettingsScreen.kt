@@ -54,10 +54,16 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape as ThumbnailShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import java.io.File
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.libraries.places.api.Places
@@ -359,6 +365,17 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        if (entry.photoPath != null) {
+                            AsyncImage(
+                                model = File(entry.photoPath),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(ThumbnailShape(8.dp)),
+                            )
+                            Spacer(Modifier.size(8.dp))
+                        }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = dateFromMilliseconds(entry.timestamp),

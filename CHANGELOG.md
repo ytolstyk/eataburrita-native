@@ -6,6 +6,8 @@
 - Map no longer stays stuck at 0,0 on open due to a race condition between camera position saving and initial centering
 
 ### Added
+- Burrito Photo Log — attach an optional photo (camera or gallery) to each burrito entry; thumbnails shown in the entry history (Settings) and on the map location tray
+- Memories screen — photo grid of all logged burrito photos, accessible from the Home menu and Stats screen; tap a photo for a full-screen view with date, location, and delete option (removes only the photo, keeps the entry)
 - Restaurant rating displayed on the map selection card under the restaurant name
 - Share card — visual card generated when sharing burrito stats
 - Particle effects on the home screen

@@ -44,6 +44,19 @@ class MapScreenViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    private val _selectedPlacePhotos = MutableStateFlow<List<String>>(emptyList())
+    val selectedPlacePhotos: StateFlow<List<String>> = _selectedPlacePhotos.asStateFlow()
+
+    fun loadPhotosForPlace(locationName: String?) {
+        _selectedPlacePhotos.value = emptyList()
+        if (locationName.isNullOrBlank()) return
+        viewModelScope.launch {
+            val paths = dao.getEntriesWithPhotoForLocation(locationName)
+                .mapNotNull { it.photoPath }
+            _selectedPlacePhotos.value = paths
+        }
+    }
+
     fun getBurritoCountForPlace(place: Place, stats: Map<String, PlaceStats>): Int =
         getPlaceStatsForPlace(place, stats)?.count ?: 0
 
