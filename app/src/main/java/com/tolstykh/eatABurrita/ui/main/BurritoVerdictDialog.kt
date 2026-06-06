@@ -1,5 +1,6 @@
 package com.tolstykh.eatABurrita.ui.main
 
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,8 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
@@ -24,9 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
+import com.tolstykh.eatABurrita.helpers.getBurritoVerdictShareMessage
 
 @Composable
 fun BurritoVerdictDialog(
@@ -85,6 +92,8 @@ fun BurritoVerdictDialog(
                 }
             }
 
+            val context = LocalContext.current
+
             Dialog(onDismissRequest = onDismiss) {
                 Surface(
                     modifier = Modifier.width(300.dp).wrapContentHeight(),
@@ -101,7 +110,19 @@ fun BurritoVerdictDialog(
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            IconButton(onClick = {
+                                val text = getBurritoVerdictShareMessage(confidence)
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    putExtra(Intent.EXTRA_TEXT, text)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(intent, null))
+                            }) {
+                                Icon(Icons.Default.Share, contentDescription = "Share result")
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
                             TextButton(onClick = onDismiss) { Text("Dismiss") }
                             if (showAddButton) {
                                 Spacer(modifier = Modifier.width(8.dp))

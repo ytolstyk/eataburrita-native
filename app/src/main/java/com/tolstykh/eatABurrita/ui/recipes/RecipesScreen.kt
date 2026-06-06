@@ -1,5 +1,6 @@
 package com.tolstykh.eatABurrita.ui.recipes
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -35,12 +37,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tolstykh.eatABurrita.helpers.getRecipeShareMessage
 
 @Composable
 fun RecipesScreen(
@@ -141,6 +145,7 @@ private fun RecipeItem(
 ) {
     var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
 
     Column {
         Row(
@@ -252,15 +257,38 @@ private fun RecipeItem(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Find Similar →",
-                    color = colorScheme.primary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .clickable { uriHandler.openUri(recipe.sourceUrl) }
-                        .padding(vertical = 4.dp),
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Find Similar →",
+                        color = colorScheme.primary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clickable { uriHandler.openUri(recipe.sourceUrl) }
+                            .padding(vertical = 4.dp),
+                    )
+                    IconButton(onClick = {
+                        val text = getRecipeShareMessage(
+                            recipe.name, recipe.culture,
+                            recipe.ingredients.size, recipe.steps.size,
+                        )
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            putExtra(Intent.EXTRA_TEXT, text)
+                            type = "text/plain"
+                        }
+                        context.startActivity(Intent.createChooser(intent, null))
+                    }) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = "Share recipe",
+                            tint = colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }

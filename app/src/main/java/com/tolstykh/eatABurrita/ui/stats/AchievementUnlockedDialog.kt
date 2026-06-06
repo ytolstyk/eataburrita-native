@@ -1,5 +1,6 @@
 package com.tolstykh.eatABurrita.ui.stats
 
+import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,7 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
@@ -31,12 +36,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.withFrameNanos
+import com.tolstykh.eatABurrita.helpers.getAchievementShareMessage
 
 private val confettiColors = listOf(
     Color(0xFFFF8D03),
@@ -70,6 +77,7 @@ fun AchievementUnlockedDialog(
     var currentIndex by remember(achievements) { mutableIntStateOf(0) }
     val achievement = achievements[currentIndex]
     val hasNext = currentIndex < achievements.lastIndex
+    val context = LocalContext.current
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -108,7 +116,21 @@ fun AchievementUnlockedDialog(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        IconButton(onClick = {
+                            val text = getAchievementShareMessage(
+                                achievement.emoji, achievement.name, achievement.description,
+                            )
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                putExtra(Intent.EXTRA_TEXT, text)
+                                type = "text/plain"
+                            }
+                            context.startActivity(Intent.createChooser(intent, null))
+                        }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share achievement")
+                        }
+                        Spacer(Modifier.weight(1f))
                         TextButton(onClick = onDismiss) { Text("Close") }
                         if (hasNext) {
                             Spacer(Modifier.width(8.dp))

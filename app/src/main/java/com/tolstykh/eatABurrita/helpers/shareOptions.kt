@@ -5,6 +5,39 @@ import kotlin.math.roundToInt
 
 const val APP_NAME = "Eat-a-Burrita"
 
+fun getAchievementShareMessage(emoji: String, name: String, description: String): String {
+    val messages = listOf(
+        "$emoji Just unlocked '$name' in $APP_NAME! $description",
+        "$emoji Achievement unlocked: $name! $description",
+        "🌯 $emoji New achievement: $name! $description",
+    )
+    return messages.random()
+}
+
+fun getRecipeShareMessage(recipeName: String, culture: String, ingredientCount: Int, stepCount: Int): String {
+    val messages = listOf(
+        "🌯 Making $recipeName tonight! ($culture style) — discovered via $APP_NAME",
+        "🌯 Just found this $culture burrito recipe in $APP_NAME: $recipeName",
+        "🌯 Tonight's burrito: $recipeName ($culture) — $ingredientCount ingredients, $stepCount steps!",
+    )
+    return messages.random()
+}
+
+fun getBurritoVerdictShareMessage(confidence: Float): String {
+    val percent = (confidence * 100).toInt()
+    return when {
+        confidence >= 0.70f -> listOf(
+            "📸 $APP_NAME's AI confirmed my burrito with $percent% confidence. Certified delicious. 🌯",
+            "🌯 Just got my burrito certified by $APP_NAME's AI scanner! $percent% burrito confidence.",
+        ).random()
+        confidence >= 0.40f -> listOf(
+            "📸 My burrito scored $percent% on $APP_NAME's AI scanner. Borderline delicious. 🌯",
+            "🌯 $APP_NAME says my food is $percent% a burrito. Close enough. 🤷",
+        ).random()
+        else -> "📸 $APP_NAME's AI said that's not a burrito. The audacity. 🌯"
+    }
+}
+
 private fun mapsLink(lat: Double, lng: Double) = "https://maps.google.com/?q=$lat,$lng"
 
 fun getRandomMessageWithStats(
