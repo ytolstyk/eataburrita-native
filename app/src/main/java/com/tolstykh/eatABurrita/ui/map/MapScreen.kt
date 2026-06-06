@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
@@ -278,7 +280,8 @@ fun FullMapView(
             Place.Field.ID,
             Place.Field.DISPLAY_NAME,
             Place.Field.LOCATION,
-            Place.Field.ADDRESS_COMPONENTS
+            Place.Field.ADDRESS_COMPONENTS,
+            Place.Field.RATING
         )
         val circle: CircularBounds = CircularBounds.newInstance(
             currentPosition,
@@ -563,6 +566,23 @@ fun PlaceBottomTray(
                 style = MaterialTheme.typography.headlineSmall,
                 color = colorScheme.onPrimary,
             )
+            place.rating?.let { rating ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.size(3.dp))
+                    Text(
+                        text = "%.1f".format(rating),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onPrimary,
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "${distanceBetweenInMiles(currentPosition, place.location)} miles away",

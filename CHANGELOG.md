@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Restaurant rating displayed on the map selection card under the restaurant name
 - Share card — visual card generated when sharing burrito stats
 - Particle effects on the home screen
 - Geofence Radar notifications — alerts when near one of your top 3 favorite burrito spots (requires background location)
