@@ -21,6 +21,12 @@ data class LocationCount(
     @ColumnInfo(name = "locationName") val locationName: String,
     @ColumnInfo(name = "cnt") val cnt: Int,
 )
+data class LocationWithCoords(
+    @ColumnInfo(name = "locationName") val locationName: String,
+    @ColumnInfo(name = "cnt") val cnt: Int,
+    @ColumnInfo(name = "locationLat") val locationLat: Double,
+    @ColumnInfo(name = "locationLong") val locationLong: Double,
+)
 data class MonthCount(
     @ColumnInfo(name = "month") val month: String, // "YYYY-MM"
     @ColumnInfo(name = "cnt") val cnt: Int,
@@ -77,6 +83,20 @@ interface BurritoDao {
 
     @Query("SELECT locationName, COUNT(*) as cnt FROM burrito_entries WHERE locationName IS NOT NULL GROUP BY locationName ORDER BY cnt DESC LIMIT 5")
     fun getTopLocations(): Flow<List<LocationCount>>
+
+    @Query("""
+        SELECT locationName, COUNT(*) as cnt,
+               AVG(locationLat) as locationLat,
+               AVG(locationLong) as locationLong
+        FROM burrito_entries
+        WHERE locationName IS NOT NULL
+          AND locationLat IS NOT NULL
+          AND locationLong IS NOT NULL
+        GROUP BY locationName
+        ORDER BY cnt DESC
+        LIMIT 3
+    """)
+    suspend fun getTopLocationsWithCoords(): List<LocationWithCoords>
 
     @Query("SELECT strftime('%Y-%m', datetime(timestamp/1000, 'unixepoch', 'localtime')) as month, COUNT(*) as cnt FROM burrito_entries WHERE timestamp >= :since GROUP BY month ORDER BY month ASC")
     fun getMonthlyCounts(since: Long): Flow<List<MonthCount>>

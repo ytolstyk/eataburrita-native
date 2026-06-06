@@ -1,5 +1,6 @@
 package com.tolstykh.eatABurrita.ui.main
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +11,9 @@ import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.data.BurritoDao
 import com.tolstykh.eatABurrita.data.BurritoEntry
 import com.tolstykh.eatABurrita.location.GetLocationUseCase
+import com.tolstykh.eatABurrita.notification.BurritoNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,6 +55,7 @@ class TimeScreenViewModel @Inject constructor(
     private val appPrefs: AppPreferencesRepository,
     private val getLocationUseCase: GetLocationUseCase,
     private val burritoClassifier: BurritoClassifier,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val zone = ZoneId.systemDefault()
@@ -280,6 +284,7 @@ class TimeScreenViewModel @Inject constructor(
     }
 
     private val triggeredMilestonesThisSession = mutableSetOf<Int>()
+    private val notificationMilestones = setOf(7, 14, 30, 50)
 
     private suspend fun computeAndTriggerCelebration() {
         val zone = ZoneId.systemDefault()
@@ -288,6 +293,16 @@ class TimeScreenViewModel @Inject constructor(
         var currentStreak = 0
         var d = today
         while (d in days) { currentStreak++; d = d.minusDays(1) }
+
+        if (appPrefs.streakMilestonesEnabled.first()) {
+            val notifMilestone = notificationMilestones.firstOrNull {
+                currentStreak == it && it !in triggeredMilestonesThisSession
+            }
+            if (notifMilestone != null) {
+                BurritoNotificationManager.sendStreakMilestoneNotification(context, notifMilestone)
+            }
+        }
+
         val milestone = listOf(100, 30, 7).firstOrNull {
             currentStreak == it && it !in triggeredMilestonesThisSession
         }

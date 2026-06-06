@@ -1,9 +1,11 @@
 package com.tolstykh.eatABurrita.ui.main
 
+import android.content.Context
 import com.tolstykh.eatABurrita.classifier.BurritoClassifier
 import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.data.BurritoDao
 import com.tolstykh.eatABurrita.data.BurritoEntry
+import com.tolstykh.eatABurrita.data.DayString
 import com.tolstykh.eatABurrita.location.GetLocationUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -34,6 +36,7 @@ class TimeScreenViewModelTest {
     private lateinit var appPrefs: AppPreferencesRepository
     private lateinit var getLocationUseCase: GetLocationUseCase
     private lateinit var burritoClassifier: BurritoClassifier
+    private lateinit var context: Context
 
     @Before
     fun setup() {
@@ -42,9 +45,11 @@ class TimeScreenViewModelTest {
         appPrefs = mockk(relaxed = true)
         getLocationUseCase = mockk()
         burritoClassifier = mockk()
+        context = mockk(relaxed = true)
         every { getLocationUseCase.invoke() } returns emptyFlow()
         every { appPrefs.showLocationModal } returns flowOf(true)
         every { appPrefs.notificationPermissionAsked } returns flowOf(false)
+        every { appPrefs.streakMilestonesEnabled } returns flowOf(false)
     }
 
     @After
@@ -61,9 +66,12 @@ class TimeScreenViewModelTest {
         every { dao.getLatestTimestamp() } returns flowOf(timestamp)
         every { dao.getEntriesSince(any()) } returns flowOf(entries)
         every { dao.getEntriesWithLocation() } returns flowOf(emptyList())
+        every { dao.getDistinctDays() } returns flowOf(emptyList<DayString>())
+        every { dao.getHourOfDayCounts() } returns flowOf(emptyList())
+        every { dao.getDayOfWeekCounts() } returns flowOf(emptyList())
     }
 
-    private fun makeViewModel() = TimeScreenViewModel(dao, appPrefs, getLocationUseCase, burritoClassifier)
+    private fun makeViewModel() = TimeScreenViewModel(dao, appPrefs, getLocationUseCase, burritoClassifier, context)
 
     @Test
     fun initialState_isLoading() {
@@ -147,6 +155,9 @@ class TimeScreenViewModelTest {
         every { dao.getLatestTimestamp() } returns flowOf(null)
         every { dao.getEntriesSince(any()) } returns flowOf(emptyList())
         every { dao.getEntriesWithLocation() } returns flowOf(emptyList())
+        every { dao.getDistinctDays() } returns flowOf(emptyList<DayString>())
+        every { dao.getHourOfDayCounts() } returns flowOf(emptyList())
+        every { dao.getDayOfWeekCounts() } returns flowOf(emptyList())
 
         val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()

@@ -3,6 +3,7 @@ package com.tolstykh.eatABurrita.ui.settings
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import com.tolstykh.eatABurrita.location.hasBackgroundLocationPermission
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -78,13 +79,20 @@ fun SettingsScreen(
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val showLocationModal by viewModel.showLocationModal.collectAsStateWithLifecycle()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
+    val geofenceEnabled by viewModel.geofenceEnabled.collectAsStateWithLifecycle()
+    val streakMilestonesEnabled by viewModel.streakMilestonesEnabled.collectAsStateWithLifecycle()
+    val weeklyRecapEnabled by viewModel.weeklyRecapEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showNotificationPermissionDialog by rememberSaveable { mutableStateOf(false) }
+    var showBackgroundLocationDialog by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     var notificationPermissionGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         )
+    }
+    var backgroundLocationGranted by remember {
+        mutableStateOf(context.hasBackgroundLocationPermission())
     }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -92,6 +100,7 @@ fun SettingsScreen(
                 notificationPermissionGranted = ContextCompat.checkSelfPermission(
                     context, Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED
+                backgroundLocationGranted = context.hasBackgroundLocationPermission()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -170,12 +179,21 @@ fun SettingsScreen(
         // Notifications
         Text("Notifications", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        // Burrito reminders (3-day / 7-day)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Burrito reminders", style = MaterialTheme.typography.bodyLarge)
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Burrito reminders", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Remind me if I haven't logged in 3 or 7 days",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
             Switch(
                 checked = notificationsToggleOn,
                 onCheckedChange = { enabled ->
@@ -193,6 +211,77 @@ fun SettingsScreen(
                         viewModel.toggleNotifications(false)
                     }
                 }
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Nearby spot alerts (geofence)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Nearby spot alerts", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Alert when near a favorite burrito spot",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = geofenceEnabled,
+                onCheckedChange = { enabled ->
+                    viewModel.toggleGeofencing(enabled)
+                    if (enabled && !backgroundLocationGranted) {
+                        showBackgroundLocationDialog = true
+                    }
+                },
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Streak milestones
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Streak milestones", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Celebrate 7, 14, 30, and 50-day streaks",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = streakMilestonesEnabled,
+                onCheckedChange = viewModel::toggleStreakMilestones,
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Weekly recap
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Weekly recap", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Monday morning summary of last week's burritos",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = weeklyRecapEnabled,
+                onCheckedChange = viewModel::toggleWeeklyRecap,
             )
         }
 
@@ -214,6 +303,30 @@ fun SettingsScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showNotificationPermissionDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showBackgroundLocationDialog) {
+            AlertDialog(
+                onDismissRequest = { showBackgroundLocationDialog = false },
+                title = { Text("One more step") },
+                text = { Text("For nearby spot alerts to work, set location access to \"All the time\" in system settings.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showBackgroundLocationDialog = false
+                        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                        }
+                        context.startActivity(intent)
+                    }) {
+                        Text("Open Settings")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showBackgroundLocationDialog = false }) {
                         Text("Cancel")
                     }
                 }

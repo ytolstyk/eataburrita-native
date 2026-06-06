@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.data.BurritoDao
 import com.tolstykh.eatABurrita.data.BurritoEntry
+import com.tolstykh.eatABurrita.location.GeofenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val dao: BurritoDao,
     private val appPrefs: AppPreferencesRepository,
+    private val geofenceManager: GeofenceManager,
 ) : ViewModel() {
 
     val entries: StateFlow<List<BurritoEntry>> = dao.getAll()
@@ -30,6 +32,15 @@ class SettingsViewModel @Inject constructor(
     val notificationsEnabled: StateFlow<Boolean> = appPrefs.notificationsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val geofenceEnabled: StateFlow<Boolean> = appPrefs.geofenceEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val streakMilestonesEnabled: StateFlow<Boolean> = appPrefs.streakMilestonesEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val weeklyRecapEnabled: StateFlow<Boolean> = appPrefs.weeklyRecapEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun toggleDarkMode(dark: Boolean) {
         viewModelScope.launch { appPrefs.setDarkMode(dark) }
     }
@@ -40,6 +51,26 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch { appPrefs.setNotificationsEnabled(enabled) }
+    }
+
+    fun toggleGeofencing(enabled: Boolean) {
+        viewModelScope.launch {
+            if (enabled) {
+                appPrefs.setGeofenceEnabled(true)
+                geofenceManager.registerTopLocationGeofences()
+            } else {
+                appPrefs.setGeofenceEnabled(false)
+                geofenceManager.removeAllGeofences()
+            }
+        }
+    }
+
+    fun toggleStreakMilestones(enabled: Boolean) {
+        viewModelScope.launch { appPrefs.setStreakMilestonesEnabled(enabled) }
+    }
+
+    fun toggleWeeklyRecap(enabled: Boolean) {
+        viewModelScope.launch { appPrefs.setWeeklyRecapEnabled(enabled) }
     }
 
     fun addEntry(entry: BurritoEntry) {

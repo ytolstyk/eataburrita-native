@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.tolstykh.eatABurrita.appPrefsDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +24,10 @@ class AppPreferencesRepository @Inject constructor(
     private val sevenDayNotifiedKey = booleanPreferencesKey("seven_day_notified")
     private val checkedIngredientsKey = stringSetPreferencesKey("checked_ingredients")
     private val unlockedAchievementsKey = stringSetPreferencesKey("unlocked_achievements")
+    private val geofenceEnabledKey = booleanPreferencesKey("geofence_enabled")
+    private val geofenceLastNotifiedKey = stringSetPreferencesKey("geofence_last_notified")
+    private val streakMilestonesEnabledKey = booleanPreferencesKey("streak_milestones_enabled")
+    private val weeklyRecapEnabledKey = booleanPreferencesKey("weekly_recap_enabled")
 
     val isDarkMode: Flow<Boolean> = context.appPrefsDataStore.data
         .map { prefs -> prefs[darkModeKey] ?: false }
@@ -47,6 +52,15 @@ class AppPreferencesRepository @Inject constructor(
 
     val unlockedAchievements: Flow<Set<String>> = context.appPrefsDataStore.data
         .map { prefs -> prefs[unlockedAchievementsKey] ?: emptySet() }
+
+    val geofenceEnabled: Flow<Boolean> = context.appPrefsDataStore.data
+        .map { prefs -> prefs[geofenceEnabledKey] ?: false }
+
+    val streakMilestonesEnabled: Flow<Boolean> = context.appPrefsDataStore.data
+        .map { prefs -> prefs[streakMilestonesEnabledKey] ?: true }
+
+    val weeklyRecapEnabled: Flow<Boolean> = context.appPrefsDataStore.data
+        .map { prefs -> prefs[weeklyRecapEnabledKey] ?: true }
 
     suspend fun setDarkMode(dark: Boolean) {
         context.appPrefsDataStore.edit { prefs ->
@@ -111,5 +125,34 @@ class AppPreferencesRepository @Inject constructor(
             prefs[threeDayNotifiedKey] = false
             prefs[sevenDayNotifiedKey] = false
         }
+    }
+
+    suspend fun setGeofenceEnabled(enabled: Boolean) {
+        context.appPrefsDataStore.edit { prefs -> prefs[geofenceEnabledKey] = enabled }
+    }
+
+    suspend fun recordGeofenceNotified(locationName: String, timestampMillis: Long) {
+        context.appPrefsDataStore.edit { prefs ->
+            val current = prefs[geofenceLastNotifiedKey] ?: emptySet()
+            val filtered = current.filterNot { it.startsWith("$locationName|") }.toSet()
+            prefs[geofenceLastNotifiedKey] = filtered + "$locationName|$timestampMillis"
+        }
+    }
+
+    suspend fun getGeofenceLastNotifiedTime(locationName: String): Long {
+        val set = context.appPrefsDataStore.data
+            .map { prefs -> prefs[geofenceLastNotifiedKey] ?: emptySet() }
+            .first()
+        return set.firstOrNull { it.startsWith("$locationName|") }
+            ?.removePrefix("$locationName|")
+            ?.toLongOrNull() ?: 0L
+    }
+
+    suspend fun setStreakMilestonesEnabled(enabled: Boolean) {
+        context.appPrefsDataStore.edit { prefs -> prefs[streakMilestonesEnabledKey] = enabled }
+    }
+
+    suspend fun setWeeklyRecapEnabled(enabled: Boolean) {
+        context.appPrefsDataStore.edit { prefs -> prefs[weeklyRecapEnabledKey] = enabled }
     }
 }

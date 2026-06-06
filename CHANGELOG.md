@@ -5,6 +5,10 @@
 ### Added
 - Share card — visual card generated when sharing burrito stats
 - Particle effects on the home screen
+- Geofence Radar notifications — alerts when near one of your top 3 favorite burrito spots (requires background location)
+- Streak Milestone notifications — push notification when hitting 7, 14, 30, or 50-day consecutive streaks
+- Weekly Recap notifications — Monday morning digest of last week's burrito count
+- Granular notification settings — each notification type (burrito reminders, nearby spot alerts, streak milestones, weekly recap) can be toggled independently in Settings
 
 ## [1.18] - 2026-06-05
 
