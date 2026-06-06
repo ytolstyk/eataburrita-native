@@ -49,10 +49,7 @@ fun Navigation(
             SettingsScreen(onBackPressed = { navController.popBackStack() })
         }
         composable<Stats> {
-            StatsScreen(
-                onBackPressed = { navController.popBackStack() },
-                onOpenMemories = { navController.navigate(Memories) },
-            )
+            StatsScreen(onBackPressed = { navController.popBackStack() })
         }
         composable<Recipes> {
             RecipesScreen(onBackPressed = { navController.popBackStack() })
