@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Map no longer stays stuck at 0,0 on open due to a race condition between camera position saving and initial centering
+
 ### Added
 - Restaurant rating displayed on the map selection card under the restaurant name
 - Share card — visual card generated when sharing burrito stats

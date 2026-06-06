@@ -186,15 +186,18 @@ fun MapScreen(
                     }
 
                     LaunchedEffect(key1 = location) {
-                        if (viewModel.lastCameraPosition == null) {
+                        if (!viewModel.hasCentered) {
                             location?.let {
+                                viewModel.hasCentered = true
                                 cameraState.centerOnLocation(it)
                             }
                         }
                     }
 
                     LaunchedEffect(cameraState.position) {
-                        viewModel.lastCameraPosition = cameraState.position
+                        if (viewModel.hasCentered) {
+                            viewModel.lastCameraPosition = cameraState.position
+                        }
                     }
 
                     if (location != null) {

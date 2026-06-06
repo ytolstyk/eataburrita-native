@@ -26,6 +26,7 @@ class MapScreenViewModel @Inject constructor(
     val viewState = _viewState.asStateFlow()
 
     var lastCameraPosition: CameraPosition? = null
+    var hasCentered: Boolean = false
 
     data class PlaceStats(val count: Int, val lastTimestamp: Long)
 
