@@ -439,7 +439,7 @@ fun BurritoFactCard(fact: String, modifier: Modifier = Modifier) {
             exit = shrinkVertically(),
         ) {
             Text(
-                text = "See a random burrito fact →",
+                text = "See a random burrito fact ▼",
                 color = colorScheme.primary,
                 fontSize = 16.sp,
                 modifier = Modifier
