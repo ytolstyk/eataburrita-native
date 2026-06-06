@@ -39,6 +39,11 @@ data class TimeScreenData(
     val lastPlaceName: String? = null,
     val lastPlaceLat: Double? = null,
     val lastPlaceLng: Double? = null,
+    val currentStreak: Int = 0,
+    val bestStreak: Int = 0,
+    val hourOfDayCounts: List<Int> = List(24) { 0 },
+    val dayOfWeekCounts: List<Int> = List(7) { 0 },
+    val yearCount: Int = 0,
 )
 
 @HiltViewModel
@@ -49,35 +54,79 @@ class TimeScreenViewModel @Inject constructor(
     private val burritoClassifier: BurritoClassifier,
 ) : ViewModel() {
 
+    private val zone = ZoneId.systemDefault()
     private val thirtyDaysAgo: Long = Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
+    private val yearStart: Long = LocalDate.now(zone).withDayOfYear(1).atStartOfDay(zone).toInstant().toEpochMilli()
 
-    private val _today = MutableStateFlow(LocalDate.now(ZoneId.systemDefault()))
+    private val _today = MutableStateFlow(LocalDate.now(zone))
 
     fun onTimerTick() {
-        val today = LocalDate.now(ZoneId.systemDefault())
+        val today = LocalDate.now(zone)
         if (_today.value != today) _today.value = today
+    }
+
+    // Group A: streak computation + year count + total count
+    private val streakFlow = combine(
+        dao.getDistinctDays(),
+        dao.getCount(),
+        dao.getEntriesSince(yearStart),
+        _today,
+    ) { dayRows, count, yearEntries, today ->
+        val days = dayRows.map { LocalDate.parse(it.day) }
+        val daySet = days.toHashSet()
+
+        var currentStreak = 0
+        var d = today
+        while (d in daySet) { currentStreak++; d = d.minusDays(1) }
+
+        var bestStreak = 0; var streak = 0; var lastDay: LocalDate? = null
+        days.forEach { day ->
+            streak = if (lastDay == null || day == lastDay!!.plusDays(1)) streak + 1 else 1
+            bestStreak = maxOf(bestStreak, streak)
+            lastDay = day
+        }
+
+        listOf(currentStreak, bestStreak, count, yearEntries.size)
+    }
+
+    // Group B: time-of-day and day-of-week patterns for personality
+    private val patternFlow = combine(
+        dao.getHourOfDayCounts(),
+        dao.getDayOfWeekCounts(),
+    ) { hourRows, dowRows ->
+        val hourArr = IntArray(24)
+        hourRows.forEach { (hour, cnt) -> hourArr[hour] = cnt }
+        val dowArr = IntArray(7)
+        dowRows.forEach { (dow, cnt) -> dowArr[(dow + 6) % 7] = cnt }
+        Pair(hourArr.toList(), dowArr.toList())
     }
 
     val timeScreenState: StateFlow<TimeScreenUIState> =
         combine(
-            dao.getCount(),
+            streakFlow,
+            patternFlow,
             dao.getLatestTimestamp(),
             dao.getEntriesSince(thirtyDaysAgo),
             dao.getEntriesWithLocation(),
-            _today,
-        ) { count, lastTs, entries, locationEntries, today ->
+        ) { streakData, (hourOfDayCounts, dayOfWeekCounts), lastTs, recentEntries, locationEntries ->
+            val (currentStreak, bestStreak, count, yearCount) = streakData
             val (favName, favLat, favLng) = buildFavoritePlace(locationEntries)
             val lastEntry = locationEntries.firstOrNull()
             TimeScreenData(
                 burritoCount = count,
                 lastTimestamp = lastTs ?: 0L,
-                dailyCounts = buildDailyCounts(entries, today),
+                dailyCounts = buildDailyCounts(recentEntries, _today.value),
                 favoritePlaceName = favName,
                 favoritePlaceLat = favLat,
                 favoritePlaceLng = favLng,
                 lastPlaceName = lastEntry?.locationName,
                 lastPlaceLat = lastEntry?.locationLat,
                 lastPlaceLng = lastEntry?.locationLong,
+                currentStreak = currentStreak,
+                bestStreak = bestStreak,
+                hourOfDayCounts = hourOfDayCounts,
+                dayOfWeekCounts = dayOfWeekCounts,
+                yearCount = yearCount,
             )
         }
             .map<TimeScreenData, TimeScreenUIState>(TimeScreenUIState::Success)

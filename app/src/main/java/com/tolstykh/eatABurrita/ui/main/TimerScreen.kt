@@ -96,8 +96,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
-import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
+import com.tolstykh.eatABurrita.ui.share.BurritoShareCardDialog
 import com.tolstykh.eatABurrita.location.hasLocationPermission
 import androidx.core.net.toUri
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -195,6 +195,7 @@ fun TimerScreen(
     }
 
     val data = (uiState as TimeScreenViewModel.TimeScreenUIState.Success).data
+    var showShareCard by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
     Surface(
@@ -265,18 +266,7 @@ fun TimerScreen(
                     }
                     Box(modifier = Modifier.size(cell))
                     Box(modifier = Modifier.size(cell), contentAlignment = Alignment.Center) {
-                        Share(
-                            context = LocalContext.current,
-                            burritoCount = data.burritoCount,
-                            lastTimestamp = data.lastTimestamp,
-                            dailyCounts = data.dailyCounts,
-                            favoritePlaceName = data.favoritePlaceName,
-                            favoritePlaceLat = data.favoritePlaceLat,
-                            favoritePlaceLng = data.favoritePlaceLng,
-                            lastPlaceName = data.lastPlaceName,
-                            lastPlaceLat = data.lastPlaceLat,
-                            lastPlaceLng = data.lastPlaceLng,
-                        )
+                        ShareCardButton(onClick = { showShareCard = true })
                     }
                 }
                 // Row 3: Camera at center
@@ -388,6 +378,13 @@ fun TimerScreen(
                 showCameraRationale = false
                 cameraPermissionState.launchPermissionRequest()
             },
+        )
+    }
+
+    if (showShareCard) {
+        BurritoShareCardDialog(
+            data = data,
+            onDismiss = { showShareCard = false },
         )
     }
 }
@@ -598,42 +595,16 @@ fun EatButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun Share(
-    context: Context,
-    burritoCount: Int = 0,
-    lastTimestamp: Long = 0L,
-    dailyCounts: List<Int> = emptyList(),
-    favoritePlaceName: String? = null,
-    favoritePlaceLat: Double? = null,
-    favoritePlaceLng: Double? = null,
-    lastPlaceName: String? = null,
-    lastPlaceLat: Double? = null,
-    lastPlaceLng: Double? = null,
-) {
+fun ShareCardButton(onClick: () -> Unit) {
     Button(
-        onClick = {
-            val text = getRandomMessageWithStats(
-                burritoCount, lastTimestamp, dailyCounts,
-                favoritePlaceName, favoritePlaceLat, favoritePlaceLng,
-                lastPlaceName, lastPlaceLat, lastPlaceLng,
-            )
-            val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                putExtra(Intent.EXTRA_TEXT, text)
-                type = "text/plain"
-            }
-            val shareIntent = Intent.createChooser(sendIntent, null)
-
-            context.startActivity(shareIntent, null)
-        },
+        onClick = onClick,
         shape = CircleShape,
         modifier = Modifier.size(70.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = colorScheme.secondary
-        )
+        colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary),
     ) {
         Icon(
             imageVector = Icons.Default.Share,
-            contentDescription = null,
+            contentDescription = "Share",
         )
     }
 }
