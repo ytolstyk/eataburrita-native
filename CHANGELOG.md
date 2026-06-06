@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.18] - 2026-06-05
+
+### Added
+- Achievements system
+- More sharing options
+
 ## [1.17] - 2026-06-05
 
 ### Added
