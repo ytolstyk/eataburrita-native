@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [1.21] - 2026-06-06
 ### Fixed
 - Camera button icon now correctly shows black in dark mode (was using system dark mode instead of app dark mode setting)
 
