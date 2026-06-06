@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Share card — visual card generated when sharing burrito stats
+- Particle effects on the home screen
+
 ## [1.18] - 2026-06-05
 
 ### Added

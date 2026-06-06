@@ -124,3 +124,20 @@ MAPS_API_KEY=your_google_maps_api_key_here
 ## Validations
 
 Clean up unused imports, constants, functions before submitting.
+
+## Testing
+
+Write unit tests for any new logic added (ViewModels, helpers, use cases, DAO queries). Place tests in `app/src/test/` for unit tests and `app/src/androidTest/` for instrumented tests. Run `./gradlew test` before considering a task complete.
+
+## Changelog
+
+Maintain `CHANGELOG.md` at the project root. Add an entry for every feature added or bug fixed, under an `[Unreleased]` section using this format:
+
+```
+## [Unreleased]
+### Added
+- Description of new feature
+
+### Fixed
+- Description of bug fix
+```
