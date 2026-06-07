@@ -39,6 +39,7 @@ import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
@@ -275,6 +276,7 @@ fun FullMapView(
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
     var mapType by remember { mutableStateOf(MapType.NORMAL) }
     var showLayersMenu by remember { mutableStateOf(false) }
+    var showRoulette by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val placesClient: PlacesClient = remember {
         if (!Places.isInitialized()) {
@@ -507,7 +509,26 @@ fun FullMapView(
                     tint = extendedLight.extra.iconTint
                 )
             }
+            if (places.isNotEmpty() && selectedPlace == null) {
+                ExtendedFloatingActionButton(
+                    onClick = { showRoulette = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp),
+                    containerColor = colorScheme.primary,
+                    contentColor = colorScheme.onPrimary,
+                    icon = { Text("🎰", fontSize = 18.sp) },
+                    text = { Text("Burrito Roulette") },
+                )
+            }
         }
+    }
+    if (showRoulette) {
+        BurritoRouletteDialog(
+            places = places,
+            currentPosition = currentPosition,
+            onDismiss = { showRoulette = false },
+        )
     }
 }
 
