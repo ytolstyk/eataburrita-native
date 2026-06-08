@@ -2,21 +2,6 @@
 
 ## Tier 1 — High Fun, Reasonable Effort
 
-### 1. Burrito Photo Log
-Attach an optional photo to each entry using CameraX or the gallery picker.
-- Add `photoPath: String?` to `BurritoEntry` (Room migration v3)
-- Show thumbnails in the entry list (Settings screen) and in the map marker bottom tray
-- New photo grid screen ("Memories") accessible from Stats or the Home screen
-
-### 12. Burrito Roulette
-"I'm feeling lucky!" button on the Map screen spins a slot machine animation and picks a random nearby burrito spot, then navigates to it in Google Maps. Great for indecisive burrito seekers.
-
-### 13. Mood Tagging
-Optional emoji mood attached to each entry: 😋 Delicious / 😐 Meh / 🤢 Bad Day.
-- Stored as a nullable `Int` rating on `BurritoEntry`
-- Stats screen: "Mood Distribution" donut chart
-- Adds personality to the entry feed without heavy new UI
-
 ### 14. Burrito Bingo
 A 5×5 bingo card with challenges like "Eat at 3 different spots", "Eat before noon", "Try a veggie burrito", "Log on a Sunday", "Beat your personal record". Refreshes monthly. Tap a tile to mark it done. Show a fireworks overlay when you get a bingo.
 
@@ -31,6 +16,18 @@ Set a yearly/monthly burrito goal from the Stats screen. Progress bar lives on t
 
 ### 18. "On This Day" Time Machine
 Home screen card that appears when the user has data from a year ago: *"One year ago today you had your 12th burrito at Chipotle 🌯"*. Tap to see a mini recap of that week. Uses existing timestamp data — zero new storage needed.
+
+### 26. Personal Place Ratings
+After logging a burrito at a named location, prompt the user (once per place) to rate it 1–5 stars with an optional short note ("best al pastor in town"). Ratings are stored locally and overlaid on the map as color-coded pins — green for loved, yellow for decent, red for avoid. A "My Places" list accessible from the Map screen shows all visited spots sorted by rating. This lets the map become a personal burrito guide, not just a log.
+- Add `placeRating: Int?` and `placeNote: String?` to a new `PlaceRating` entity keyed by `locationName`
+- `MapScreen` renders rated places with tinted markers and a compact rating badge
+- Tapping a rated marker shows the stored note and the date last visited
+
+### 27. Burrito Streak Heatmap
+A GitHub-style contribution grid on the Stats screen showing daily burrito activity over the past year — darker green = more burritos that day. Tap any cell to see what was logged. Zero new data needed (uses existing timestamps).
+
+### 28. Quick Log Widget
+A home screen widget (AppWidgetProvider) with a single "Eat!" button that launches directly into the size picker flow. Skips the timer screen entirely for fast logging. Ideal for repeat-location regulars.
 
 ---
 
@@ -50,6 +47,12 @@ Before saving an entry, tap "Name This Burrito" to get a ridiculous procedurally
 
 ### 23. Pixel Burrito Gallery
 Each logged burrito auto-generates a tiny pixel-art burrito sprite (deterministic from timestamp seed — no network, no ML) using Canvas. A "Burrito Collection" grid in the Stats or Memories screen shows all your sprites. Purely cosmetic and delightful.
+
+### 29. Burrito Time Capsule
+Write a short note to your future burrito self ("still chasing that perfect al pastor"). It auto-surfaces as a home screen card after 6 months with a "You wrote this 6 months ago" header. Stored in DataStore. No server needed.
+
+### 30. Burrito Companion Log
+Optionally tag who you ate with (free-text name). Stats screen shows a leaderboard of your most frequent burrito companions. Great for couples or office regulars.
 
 ---
 
@@ -73,17 +76,25 @@ Tongue-in-cheek eco stat in the Stats screen: calculate a fake-but-themed "burri
 
 | Feature | Key Files |
 |---------|-----------|
-| Photo log | `BurritoEntry.kt`, `BurritoDatabase.kt`, `BurritoDao.kt`, `TimerScreen.kt`, `TimeScreenViewModel.kt`, new `PhotoGalleryScreen.kt` |
-| Mood tagging | `BurritoEntry.kt`, `BurritoDatabase.kt`, `StatsScreen.kt` |
+| Personal Place Ratings | new `PlaceRating.kt` entity, `BurritoDatabase.kt`, `BurritoDao.kt`, `MapScreen.kt`, `MapScreenViewModel.kt`, new `MyPlacesSheet.kt` |
+| Streak Heatmap | `StatsScreen.kt`, `StatsViewModel.kt`, `BurritoDao.kt` |
+| Quick Log Widget | new `BurritoWidget.kt`, `AndroidManifest.xml`, `res/xml/widget_info.xml` |
 | Burrito Bingo | new `BingoScreen.kt`, `BingoViewModel.kt`, `AppPreferencesRepository.kt` |
 | Streak Freeze | `AppPreferencesRepository.kt`, `TimerScreen.kt`, `TimeScreenViewModel.kt` |
 | Burrito Pledge | `AppPreferencesRepository.kt`, `StatsScreen.kt`, `TimerScreen.kt` |
-| Burrito Roulette | `MapScreen.kt`, `MapScreenViewModel.kt` |
 | Burrito Name Generator | `BurritoEntry.kt`, `BurritoDatabase.kt`, `SizePickerModal.kt` |
+| Burrito Time Capsule | `AppPreferencesRepository.kt`, `TimerScreen.kt` |
+| Burrito Companion Log | `BurritoEntry.kt`, `BurritoDatabase.kt`, `SizePickerModal.kt`, `StatsScreen.kt` |
 
 ---
 
 ## Done
+
+### 1. Burrito Photo Log ✅
+Attach an optional photo to each entry using CameraX or the gallery picker.
+- `photoPath: String?` added to `BurritoEntry` (Room migration)
+- Thumbnails in the entry list (Settings screen)
+- Photo grid screen ("Memories") accessible from the Home screen
 
 ### 2. On-Device "Is This a Burrito?" Classifier ✅
 Used **Google ML Kit ImageLabeler** — recognizes "Burrito", "Wrap", "Tortilla" out of the box.
@@ -123,3 +134,7 @@ A rotating fact card on the Home screen.
 - `GeofenceBroadcastReceiver.kt` fires a notification on `GEOFENCE_TRANSITION_ENTER`
 - `BootReceiver.kt` re-registers geofences after device reboot
 - Geofence notifications toggleable independently in Settings
+
+### 12. Burrito Roulette ✅
+"I'm feeling lucky!" button on the Map screen spins a slot machine animation and picks a random nearby burrito spot, then navigates to it in Google Maps.
+- `MapScreen.kt` + `MapScreenViewModel.kt`
