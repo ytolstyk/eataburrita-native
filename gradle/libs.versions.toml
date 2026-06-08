@@ -27,7 +27,7 @@ workManager = "2.9.1"
 mockk = "1.13.12"
 kotlinxCoroutinesTest = "1.9.0"
 coil = "2.7.0"
-tensorflowLiteTaskVision = "0.4.4"
+generativeai = "0.9.0"
 kotlinxCoroutinesPlayServices = "1.9.0"
 
 [libraries]
@@ -73,7 +73,7 @@ androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref =
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-tensorflow-lite-task-vision = { group = "org.tensorflow", name = "tensorflow-lite-task-vision", version.ref = "tensorflowLiteTaskVision" }
+generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "generativeai" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
 
 [plugins]

@@ -1,7 +1,9 @@
 package com.tolstykh.eatABurrita.ui.main
 
 import android.content.Context
+import android.net.Uri
 import com.tolstykh.eatABurrita.classifier.BurritoClassifier
+import com.tolstykh.eatABurrita.classifier.ClassificationOutcome
 import com.tolstykh.eatABurrita.data.AppPreferencesRepository
 import com.tolstykh.eatABurrita.data.BurritoDao
 import com.tolstykh.eatABurrita.data.BurritoEntry
@@ -203,5 +205,33 @@ class TimeScreenViewModelTest {
         viewModel.onSizeConfirmed(760)
 
         assertTrue(viewModel.photoPickerOpen.value)
+    }
+
+    @Test
+    fun classifyPhoto_rateLimited_emitsRateLimitedState() = runTest(testDispatcher) {
+        stubDao()
+        val uri = mockk<Uri>()
+        coEvery { burritoClassifier.classify(uri) } returns ClassificationOutcome.RateLimited(25)
+
+        val viewModel = makeViewModel()
+        viewModel.classifyPhoto(uri)
+        advanceUntilIdle()
+
+        val state = viewModel.verdictState.value
+        assertTrue(state is TimeScreenViewModel.BurritoVerdictState.RateLimited)
+        assertEquals(25, (state as TimeScreenViewModel.BurritoVerdictState.RateLimited).secondsRemaining)
+    }
+
+    @Test
+    fun classifyPhoto_apiError_emitsBrainBrokeState() = runTest(testDispatcher) {
+        stubDao()
+        val uri = mockk<Uri>()
+        coEvery { burritoClassifier.classify(uri) } returns ClassificationOutcome.ApiError
+
+        val viewModel = makeViewModel()
+        viewModel.classifyPhoto(uri)
+        advanceUntilIdle()
+
+        assertEquals(TimeScreenViewModel.BurritoVerdictState.BrainBroke, viewModel.verdictState.value)
     }
 }

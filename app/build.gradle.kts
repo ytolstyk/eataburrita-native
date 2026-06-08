@@ -69,10 +69,6 @@ android {
         buildConfig = true
     }
 
-    androidResources {
-        noCompress += "tflite"
-    }
-
     packaging {
         resources {
             excludes += "/META-INF/*"
@@ -93,7 +89,7 @@ secrets {
 
 dependencies {
     implementation(libs.coil.compose)
-    implementation(libs.tensorflow.lite.task.vision)
+    implementation(libs.generativeai)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.hilt.android)
     implementation(libs.androidx.lifecycle.viewmodel)

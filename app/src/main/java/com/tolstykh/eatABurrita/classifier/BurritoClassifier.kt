@@ -1,18 +1,22 @@
 package com.tolstykh.eatABurrita.classifier
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
+import com.tolstykh.eatABurrita.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.task.vision.classifier.ImageClassifier
 import javax.inject.Inject
 import javax.inject.Singleton
 
 sealed interface ClassificationOutcome {
     data class Success(val isBurrito: Boolean, val confidence: Float, val comment: String) : ClassificationOutcome
+    data class RateLimited(val secondsRemaining: Int) : ClassificationOutcome
+    data object ApiError : ClassificationOutcome
     data class Failure(val cause: Throwable) : ClassificationOutcome
 }
 
@@ -21,71 +25,72 @@ class BurritoClassifier @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     companion object {
-        private const val MODEL_FILE = "food_V1.tflite"
+        private const val COOLDOWN_MS = 30_000L
+        private const val MAX_DIM = 512
+        private val PROMPT = """
+            Supreme Burrito Oracle: is this a burrito?
+            Reply on ONE line: YES|<confidence 0.0-1.0>|<witty remark under 80 chars>
+            or: NO|0.0|<witty remark under 80 chars>
+            Be dramatic.
+        """.trimIndent()
+    }
 
-        // Matches against food_V1's ~2023 food labels; all lowercase for case-insensitive comparison.
-        private val BURRITO_LABELS = setOf(
-            "burrito", "taco", "tortilla", "wrap", "enchilada",
-            "quesadilla", "fajita", "nachos", "chimichanga", "tostada",
-            "tamale", "gordita", "huarache", "chalupa",
-        )
-
-        private val REJECT_COMMENTS = listOf(
-            "Nice try.",
-            "Not a burrito. We checked.",
-            "Burrito not detected.",
-            "The scanner says no.",
+    private val model by lazy {
+        GenerativeModel(
+            modelName = "gemini-2.5-flash-lite",
+            apiKey = BuildConfig.GEMINI_API_KEY,
         )
     }
 
-    private val classifier: ImageClassifier by lazy {
-        val options = ImageClassifier.ImageClassifierOptions.builder()
-            .setMaxResults(15)
-            .setScoreThreshold(0.05f)
-            .build()
-        ImageClassifier.createFromFileAndOptions(context, MODEL_FILE, options)
-    }
+    private var lastCallEpochMs = 0L
 
     suspend fun classify(photoUri: Uri): ClassificationOutcome {
+        val now = System.currentTimeMillis()
+        val elapsed = now - lastCallEpochMs
+        if (elapsed < COOLDOWN_MS) {
+            val secondsLeft = ((COOLDOWN_MS - elapsed) / 1000L + 1).toInt()
+            return ClassificationOutcome.RateLimited(secondsLeft)
+        }
+        lastCallEpochMs = now
+
         return try {
             val bitmap = withContext(Dispatchers.IO) {
                 ImageDecoder.decodeBitmap(
                     ImageDecoder.createSource(context.contentResolver, photoUri)
                 ) { decoder, _, _ ->
                     decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                }
+                }.scaleToMaxDim(MAX_DIM)
             }
 
-            val tensorImage = TensorImage.fromBitmap(bitmap)
-            val results = withContext(Dispatchers.Default) {
-                classifier.classify(tensorImage)
+            val response = withContext(Dispatchers.IO) {
+                model.generateContent(
+                    content {
+                        image(bitmap)
+                        text(PROMPT)
+                    }
+                )
             }
 
-            val best = results
-                .flatMap { it.categories }
-                .filter { cat ->
-                    val label = cat.label.lowercase()
-                    BURRITO_LABELS.any { label.contains(it) }
-                }
-                .maxByOrNull { it.score }
-
-            if (best != null) {
-                ClassificationOutcome.Success(true, best.score, commentFor(best.label, best.score))
-            } else {
-                ClassificationOutcome.Success(false, 0f, REJECT_COMMENTS.random())
-            }
+            parseResponse(response.text ?: "")
         } catch (e: Exception) {
-            ClassificationOutcome.Failure(e)
+            ClassificationOutcome.ApiError
         }
     }
 
-    private fun commentFor(label: String, score: Float): String {
-        val item = label.lowercase().replace("_", " ").trim()
-        return when {
-            score >= 0.85f -> "Undeniably a $item. No notes."
-            score >= 0.60f -> "Solid $item detected. We'll count it."
-            score >= 0.40f -> "Looks like a $item. Close enough."
-            else -> "Might be a $item. We'll allow it."
-        }
+    private fun parseResponse(raw: String): ClassificationOutcome {
+        val line = raw.trim().lines().firstOrNull { it.contains("|") }
+            ?: return ClassificationOutcome.ApiError
+        val parts = line.split("|")
+        if (parts.size < 3) return ClassificationOutcome.ApiError
+        val isBurrito = parts[0].trim().uppercase().startsWith("YES")
+        val confidence = parts[1].trim().toFloatOrNull() ?: if (isBurrito) 0.8f else 0f
+        val comment = parts[2].trim()
+        return ClassificationOutcome.Success(isBurrito, confidence, comment)
     }
+}
+
+private fun Bitmap.scaleToMaxDim(maxDim: Int): Bitmap {
+    if (width <= maxDim && height <= maxDim) return this
+    val scale = maxDim.toFloat() / maxOf(width, height)
+    return Bitmap.createScaledBitmap(this, (width * scale).toInt(), (height * scale).toInt(), true)
 }

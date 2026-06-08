@@ -4,6 +4,14 @@
 ### Added
 - Burrito Roulette — "🎰 Burrito Roulette" FAB on the Map screen spins a slot-machine animation through nearby restaurants and picks a random one; Navigate button opens Google Maps directions to the winner
 
+### Changed
+- Burrito scanner now uses Gemini 1.5 Flash (cloud vision API) instead of the local TFLite model — delivers witty, burrito-oracle commentary; images are compressed to 512px before sending to reduce token cost
+- Scanner is rate-limited to once every 30 seconds; attempting sooner shows a "still digesting" message
+- API unavailability shows a "brain out of money" dialog with a Donate button instead of a generic error
+
+### Removed
+- Bundled `food_V1.tflite` model (20 MB) — APK shrinks accordingly
+
 ## [1.21] - 2026-06-06
 ### Fixed
 - Camera button icon now correctly shows black in dark mode (was using system dark mode instead of app dark mode setting)

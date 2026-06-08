@@ -340,7 +340,8 @@ class TimeScreenViewModel @Inject constructor(
         data object None : BurritoVerdictState
         data object Classifying : BurritoVerdictState
         data class Verdict(val isBurrito: Boolean, val confidence: Float, val comment: String) : BurritoVerdictState
-        data object Failure : BurritoVerdictState
+        data class RateLimited(val secondsRemaining: Int) : BurritoVerdictState
+        data object BrainBroke : BurritoVerdictState
     }
 
     private val _verdictState = MutableStateFlow<BurritoVerdictState>(BurritoVerdictState.None)
@@ -351,7 +352,9 @@ class TimeScreenViewModel @Inject constructor(
         viewModelScope.launch {
             _verdictState.value = when (val outcome = burritoClassifier.classify(photoUri)) {
                 is ClassificationOutcome.Success -> BurritoVerdictState.Verdict(outcome.isBurrito, outcome.confidence, outcome.comment)
-                is ClassificationOutcome.Failure -> BurritoVerdictState.Failure
+                is ClassificationOutcome.RateLimited -> BurritoVerdictState.RateLimited(outcome.secondsRemaining)
+                is ClassificationOutcome.ApiError -> BurritoVerdictState.BrainBroke
+                is ClassificationOutcome.Failure -> BurritoVerdictState.BrainBroke
             }
         }
     }

@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -126,7 +127,8 @@ fun BurritoVerdictDialog(
             }
         }
 
-        is TimeScreenViewModel.BurritoVerdictState.Failure -> {
+        is TimeScreenViewModel.BurritoVerdictState.RateLimited -> {
+            val seconds = verdictState.secondsRemaining
             Dialog(onDismissRequest = onDismiss) {
                 Surface(
                     modifier = Modifier.width(300.dp).wrapContentHeight(),
@@ -134,12 +136,10 @@ fun BurritoVerdictDialog(
                     color = colorScheme.surface,
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        PhotoPreview(photoUri)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Scan failed", style = MaterialTheme.typography.titleLarge)
+                        Text("Easy there!", style = MaterialTheme.typography.titleLarge)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "Couldn't analyze the photo. Try again.",
+                            "The burrito brain is still digesting. Try again in $seconds seconds.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Spacer(modifier = Modifier.height(20.dp))
@@ -148,6 +148,41 @@ fun BurritoVerdictDialog(
                             horizontalArrangement = Arrangement.End,
                         ) {
                             Button(onClick = onDismiss) { Text("OK") }
+                        }
+                    }
+                }
+            }
+        }
+
+        is TimeScreenViewModel.BurritoVerdictState.BrainBroke -> {
+            val context = LocalContext.current
+            Dialog(onDismissRequest = onDismiss) {
+                Surface(
+                    modifier = Modifier.width(300.dp).wrapContentHeight(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = colorScheme.surface,
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("Brain Out of Money", style = MaterialTheme.typography.titleLarge)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "The burrito brain ran out of funds and can't scan right now. Care to donate and keep it running?",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(onClick = onDismiss) { Text("Maybe Later") }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            OutlinedButton(onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/eatABurrita"))
+                                context.startActivity(intent)
+                            }) {
+                                Text("Donate")
+                            }
                         }
                     }
                 }
