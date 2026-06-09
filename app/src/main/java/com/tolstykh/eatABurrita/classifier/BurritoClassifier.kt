@@ -29,9 +29,10 @@ class BurritoClassifier @Inject constructor(
         private const val MAX_DIM = 512
         private val PROMPT = """
             Supreme Burrito Oracle: is this a burrito?
-            Reply on ONE line: YES|<confidence 0.0-1.0>|<witty remark under 80 chars>
-            or: NO|0.0|<witty remark under 80 chars>
-            Be dramatic.
+            Reply on ONE line using this exact format:
+            YES|0.95|Your witty remark here
+            or: NO|0.0|Your witty remark here
+            Confidence is a number between 0.0 and 1.0. Remark must be under 80 chars. Be dramatic.
         """.trimIndent()
     }
 
@@ -84,7 +85,7 @@ class BurritoClassifier @Inject constructor(
         if (parts.size < 3) return ClassificationOutcome.ApiError
         val isBurrito = parts[0].trim().uppercase().startsWith("YES")
         val confidence = parts[1].trim().toFloatOrNull() ?: if (isBurrito) 0.8f else 0f
-        val comment = parts[2].trim()
+        val comment = parts[2].trim().removeSurrounding("<", ">")
         return ClassificationOutcome.Success(isBurrito, confidence, comment)
     }
 }
