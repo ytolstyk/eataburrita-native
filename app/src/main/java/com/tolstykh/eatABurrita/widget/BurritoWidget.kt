@@ -111,7 +111,7 @@ internal fun BurritoWidgetContent(count: Int) {
                 GlanceText(
                     text = "Eat!",
                     style = GlanceTextStyle(
-                        fontSize = 22.sp,
+                        fontSize = 16.sp,
                         fontWeight = GlanceFontWeight.Bold,
                         color = ColorProvider(Color.White),
                     ),
@@ -159,7 +159,7 @@ private fun BurritoWidgetPreview() {
             ) {
                 Text(
                     text = "Eat!",
-                    fontSize = 22.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                 )
