@@ -33,3 +33,6 @@
 -keepclassmembers class <1>$$serializer {
     <fields>;
 }
+
+# Glance resolves ActionCallback subclasses by class name at runtime
+-keep class com.tolstykh.eatABurrita.widget.** { *; }

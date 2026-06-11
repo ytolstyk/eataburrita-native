@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- Quick Log home screen widget (2×2): shows total burrito count and an "Eat!" button that instantly logs a new entry, skipping all modals
 - Burrito Roulette — "🎰 Burrito Roulette" FAB on the Map screen spins a slot-machine animation through nearby restaurants and picks a random one; Navigate button opens Google Maps directions to the winner
 
 ### Changed

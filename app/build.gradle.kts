@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.generativeai)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.glance.appwidget)
     implementation(libs.hilt.android)
     implementation(libs.androidx.lifecycle.viewmodel)
     // LiveData
