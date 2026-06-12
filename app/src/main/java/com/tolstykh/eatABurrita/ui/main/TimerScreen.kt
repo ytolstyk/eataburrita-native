@@ -118,6 +118,8 @@ fun TimerScreen(
     onOpenStats: () -> Unit,
     onOpenRecipes: () -> Unit,
     onOpenMemories: () -> Unit = {},
+    openShareOnStart: Boolean = false,
+    openCameraOnStart: Boolean = false,
 ) {
     val uiState by viewModel.timeScreenState.collectAsStateWithLifecycle()
     val locationPickerOpen by viewModel.locationPickerOpen.collectAsStateWithLifecycle()
@@ -179,6 +181,9 @@ fun TimerScreen(
             else -> cameraPermissionState.launchPermissionRequest()
         }
     }
+    LaunchedEffect(Unit) {
+        if (openCameraOnStart) onCameraClick()
+    }
     var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -209,7 +214,7 @@ fun TimerScreen(
     }
 
     val data = (uiState as TimeScreenViewModel.TimeScreenUIState.Success).data
-    var showShareCard by remember { mutableStateOf(false) }
+    var showShareCard by remember { mutableStateOf(openShareOnStart) }
 
     Box(modifier = Modifier.fillMaxSize()) {
     Surface(

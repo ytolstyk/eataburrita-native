@@ -21,6 +21,8 @@ fun Navigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: Any = Home,
+    openShareOnStart: Boolean = false,
+    openCameraOnStart: Boolean = false,
 ) {
     NavHost(
         navController = navController,
@@ -34,6 +36,8 @@ fun Navigation(
                 onOpenStats = { navController.navigate(Stats) },
                 onOpenRecipes = { navController.navigate(Recipes) },
                 onOpenMemories = { navController.navigate(Memories) },
+                openShareOnStart = openShareOnStart,
+                openCameraOnStart = openCameraOnStart,
             )
         }
         composable<Map> {

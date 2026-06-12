@@ -24,7 +24,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val openMap = intent.getBooleanExtra(EXTRA_OPEN_MAP, false)
+        val openMap    = intent.getBooleanExtra(EXTRA_OPEN_MAP, false)
+        val openShare  = intent.getBooleanExtra(EXTRA_OPEN_SHARE, false)
+        val openCamera = intent.getBooleanExtra(EXTRA_OPEN_CAMERA, false)
 
         setContent {
             val isDark by appPrefs.isDarkMode.collectAsStateWithLifecycle(initialValue = false)
@@ -56,13 +58,17 @@ class MainActivity : ComponentActivity() {
             EataBurritaTheme(darkTheme = isDark, dynamicColor = false) {
                 Navigation(
                     modifier = Modifier.fillMaxSize(),
-                    startDestination = if (openMap) Map else Home
+                    startDestination = if (openMap) Map else Home,
+                    openShareOnStart = openShare,
+                    openCameraOnStart = openCamera,
                 )
             }
         }
     }
 
     companion object {
-        const val EXTRA_OPEN_MAP = "extra_open_map"
+        const val EXTRA_OPEN_MAP    = "extra_open_map"
+        const val EXTRA_OPEN_SHARE  = "extra_open_share"
+        const val EXTRA_OPEN_CAMERA = "extra_open_camera"
     }
 }

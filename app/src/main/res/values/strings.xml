@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Eat-a-Burrita</string>
     <string name="widget_description">Quick-log a burrito and see your total count</string>
+    <string name="stats_widget_description">Quick-log and see your burrito stats</string>
 </resources>

@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Added
 - Quick Log home screen widget (2×2): shows total burrito count and an "Eat!" button that instantly logs a new entry, skipping all modals
+- Stats home screen widget (4×1): pill-shaped widget with an orange "Eat!" button on the left, a stats panel in the center that auto-cycles through 5 stats (total, streak, best streak, avg/week, calories) every 5 seconds, and a blue Map button on the right; tapping the stats opens the app, tapping Map opens the map screen
 - Burrito Roulette — "🎰 Burrito Roulette" FAB on the Map screen spins a slot-machine animation through nearby restaurants and picks a random one; Navigate button opens Google Maps directions to the winner
 
 ### Changed
