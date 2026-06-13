@@ -73,36 +73,26 @@ class BurritoWidget : GlanceAppWidget() {
     }
 }
 
-// How much to push everything down so the badge (26dp tall) is not clipped at the top.
-// 13dp = half the badge height, so the badge top sits exactly at the widget top edge.
-private const val TOP_PAD_DP = 13f
-
 @Composable
 internal fun BurritoWidgetContent(count: Int) {
     val widgetSize = LocalSize.current
-    // Subtract the top padding from the available height before taking the min,
-    // so the circle is sized to fit inside the padded area.
-    val circleDp = (minOf(widgetSize.width.value, widgetSize.height.value - TOP_PAD_DP) - 8f)
+    val circleDp = (minOf(widgetSize.width.value, widgetSize.height.value) - 10f)
         .coerceAtLeast(40f).dp
 
-    // Outer Box: transparent (no background set). Top padding shifts badge + button
-    // down so the badge is fully visible. contentAlignment = TopEnd positions the
-    // badge (fixed 26dp child) at the top-right of the padded content area.
-    // The centering wrapper (fillMaxSize child) fills the padded area and ignores
-    // contentAlignment, then centres the fixed-size circle inside itself.
+    // Center the circle, then place the badge at the circle's bottom-right corner.
+    // padding(bottom=4) shifts the center point up by 2dp.
     GlanceBox(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .padding(top = TOP_PAD_DP.dp),
-        contentAlignment = GlanceAlignment.TopEnd,
+        modifier = GlanceModifier.fillMaxSize().padding(top = 8.dp),
+        contentAlignment = GlanceAlignment.TopCenter,
     ) {
+        // Wrapper matches circle size so BottomEnd lands on the circle's corner.
         GlanceBox(
-            modifier = GlanceModifier.fillMaxSize(),
-            contentAlignment = GlanceAlignment.Center,
+            modifier = GlanceModifier.size(circleDp),
+            contentAlignment = GlanceAlignment.BottomEnd,
         ) {
             GlanceBox(
                 modifier = GlanceModifier
-                    .size(circleDp)
+                    .fillMaxSize()
                     .cornerRadius(200.dp)
                     .background(ColorProvider(BurritoOrange))
                     .clickable(actionRunCallback<LogBurritoAction>()),
@@ -117,24 +107,24 @@ internal fun BurritoWidgetContent(count: Int) {
                     ),
                 )
             }
-        }
 
-        // Count badge — at TopEnd of the padded area, sits on top of the circle
-        GlanceBox(
-            modifier = GlanceModifier
-                .size(26.dp)
-                .cornerRadius(13.dp)
-                .background(ColorProvider(BurritoPurple)),
-            contentAlignment = GlanceAlignment.Center,
-        ) {
-            GlanceText(
-                text = if (count > 99) "99+" else "$count",
-                style = GlanceTextStyle(
-                    fontSize = 11.sp,
-                    fontWeight = GlanceFontWeight.Bold,
-                    color = ColorProvider(Color.White),
-                ),
-            )
+            // Badge rendered on top at bottom-right corner of the circle
+            GlanceBox(
+                modifier = GlanceModifier
+                    .size(26.dp)
+                    .cornerRadius(13.dp)
+                    .background(ColorProvider(BurritoPurple)),
+                contentAlignment = GlanceAlignment.Center,
+            ) {
+                GlanceText(
+                    text = if (count > 99) "99+" else "$count",
+                    style = GlanceTextStyle(
+                        fontSize = 11.sp,
+                        fontWeight = GlanceFontWeight.Bold,
+                        color = ColorProvider(Color.White),
+                    ),
+                )
+            }
         }
     }
 }
@@ -145,38 +135,37 @@ internal fun BurritoWidgetContent(count: Int) {
 @Composable
 private fun BurritoWidgetPreview() {
     MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 13.dp),
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp), contentAlignment = Alignment.TopCenter) {
             Box(
-                modifier = Modifier
-                    .size(89.dp) // min(110, 110-13) - 8
-                    .align(Alignment.Center)
-                    .background(Color(0xFFFF8D03), shape = CircleShape),
-                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(100.dp), // min(110, 110) - 10
             ) {
-                Text(
-                    text = "Eat!",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(26.dp)
-                    .background(Color(0xFF9D00D6), shape = CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "42",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFFF8D03), shape = CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Eat!",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(26.dp)
+                        .background(Color(0xFF9D00D6), shape = CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "42",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                }
             }
         }
     }
