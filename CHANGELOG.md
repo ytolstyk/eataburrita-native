@@ -10,6 +10,9 @@
 - Stats home screen widget (4×1): pill-shaped widget with an orange "Eat!" button on the left, a stats panel in the center that auto-cycles through 5 stats (total, streak, best streak, avg/week, calories) every 5 seconds, and a blue Map button on the right; tapping the stats opens the app, tapping Map opens the map screen
 - Burrito Roulette — "🎰 Burrito Roulette" FAB on the Map screen spins a slot-machine animation through nearby restaurants and picks a random one; Navigate button opens Google Maps directions to the winner
 
+### Fixed
+- Location picker modal: keyboard no longer dismisses while typing a restaurant name; autocomplete suggestions now render inline (no popup window) so the IME stays open, and the search field is auto-focused when the dialog opens
+
 ### Changed
 - Burrito scanner now uses Gemini 1.5 Flash (cloud vision API) instead of the local TFLite model — delivers witty, burrito-oracle commentary; images are compressed to 512px before sending to reduce token cost
 - Scanner is rate-limited to once every 30 seconds; attempting sooner shows a "still digesting" message

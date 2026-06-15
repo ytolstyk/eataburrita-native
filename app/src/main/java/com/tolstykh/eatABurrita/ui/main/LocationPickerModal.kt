@@ -2,9 +2,7 @@ package com.tolstykh.eatABurrita.ui.main
 
 import android.util.Log
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,14 +10,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -36,9 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.google.android.gms.maps.model.LatLng
@@ -79,7 +78,11 @@ fun LocationPickerModal(
     var searchText by remember { mutableStateOf("") }
     val searchPredictions = remember { mutableStateListOf<com.google.android.libraries.places.api.model.AutocompletePrediction>() }
     var skipNextSearch by remember { mutableStateOf(false) }
-    var searchFieldWidth by remember { mutableStateOf(0) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     LaunchedEffect(searchText) {
         if (skipNextSearch) {
@@ -139,56 +142,69 @@ fun LocationPickerModal(
             shape = RoundedCornerShape(16.dp),
             color = colorScheme.surface,
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
                 Text("Where are you eating?", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val density = LocalDensity.current
-                Box(modifier = Modifier.fillMaxWidth().onGloballyPositioned { searchFieldWidth = it.size.width }) {
-                    OutlinedTextField(
-                        value = searchText,
-                        onValueChange = { searchText = it },
-                        label = { Text("Search restaurant") },
-                        singleLine = true,
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    label = { Text("Search restaurant") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                )
+                if (searchPredictions.isNotEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = colorScheme.surfaceVariant,
                         modifier = Modifier.fillMaxWidth(),
-                    )
-                    DropdownMenu(
-                        expanded = searchPredictions.isNotEmpty(),
-                        onDismissRequest = { searchPredictions.clear() },
-                        modifier = Modifier.width(with(density) { searchFieldWidth.toDp() }),
                     ) {
-                        searchPredictions.forEach { prediction ->
-                            DropdownMenuItem(
-                                text = {
-                                    Column {
-                                        Text(
-                                            text = prediction.getPrimaryText(null).toString(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
-                                        Text(
-                                            text = prediction.getSecondaryText(null).toString(),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    val placeRequest = FetchPlaceRequest.newInstance(
-                                        prediction.placeId,
-                                        listOf(Place.Field.DISPLAY_NAME, Place.Field.LOCATION),
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = 200.dp)
+                                .verticalScroll(rememberScrollState()),
+                        ) {
+                            searchPredictions.forEach { prediction ->
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val placeRequest = FetchPlaceRequest.newInstance(
+                                                prediction.placeId,
+                                                listOf(Place.Field.DISPLAY_NAME, Place.Field.LOCATION),
+                                            )
+                                            placesClient.fetchPlace(placeRequest)
+                                                .addOnSuccessListener { fetchResponse ->
+                                                    skipNextSearch = true
+                                                    selectedPlace = fetchResponse.place
+                                                    searchText = fetchResponse.place.displayName ?: ""
+                                                    searchPredictions.clear()
+                                                }
+                                                .addOnFailureListener { e ->
+                                                    Log.e("LocationPicker", "FetchPlace failed", e)
+                                                }
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                ) {
+                                    Text(
+                                        text = prediction.getPrimaryText(null).toString(),
+                                        style = MaterialTheme.typography.bodyMedium,
                                     )
-                                    placesClient.fetchPlace(placeRequest)
-                                        .addOnSuccessListener { fetchResponse ->
-                                            skipNextSearch = true
-                                            selectedPlace = fetchResponse.place
-                                            searchText = fetchResponse.place.displayName ?: ""
-                                            searchPredictions.clear()
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Log.e("LocationPicker", "FetchPlace failed", e)
-                                        }
-                                },
-                            )
+                                    Text(
+                                        text = prediction.getSecondaryText(null).toString(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                HorizontalDivider(thickness = 0.5.dp, color = colorScheme.outlineVariant)
+                            }
                         }
                     }
                 }
@@ -219,8 +235,8 @@ fun LocationPickerModal(
                         color = colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    LazyColumn(modifier = Modifier.fillMaxWidth().height(220.dp)) {
-                        items(nearbyPlaces) { place ->
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        nearbyPlaces.forEach { place ->
                             val isSelected = selectedPlace?.id == place.id
                             Surface(
                                 color = if (isSelected) colorScheme.primaryContainer else colorScheme.surface,
