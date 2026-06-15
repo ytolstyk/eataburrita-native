@@ -11,6 +11,7 @@ import com.tolstykh.eatABurrita.ui.main.TimerScreen
 import com.tolstykh.eatABurrita.ui.map.MapScreen
 import com.tolstykh.eatABurrita.ui.memories.MemoriesScreen
 import com.tolstykh.eatABurrita.ui.recipes.RecipesScreen
+import com.tolstykh.eatABurrita.ui.restaurants.RestaurantsScreen
 import com.tolstykh.eatABurrita.ui.settings.SettingsScreen
 import com.tolstykh.eatABurrita.ui.stats.StatsScreen
 import kotlinx.serialization.SerialName
@@ -36,6 +37,7 @@ fun Navigation(
                 onOpenStats = { navController.navigate(Stats) },
                 onOpenRecipes = { navController.navigate(Recipes) },
                 onOpenMemories = { navController.navigate(Memories) },
+                onOpenRestaurants = { navController.navigate(Restaurants) },
                 openShareOnStart = openShareOnStart,
                 openCameraOnStart = openCameraOnStart,
             )
@@ -46,7 +48,14 @@ fun Navigation(
                     if (!navController.popBackStack()) {
                         navController.navigate(Home)
                     }
-                }
+                },
+                onNavigateToRestaurants = { navController.navigate(Restaurants) },
+            )
+        }
+        composable<Restaurants> {
+            RestaurantsScreen(
+                onBackPressed = { navController.popBackStack() },
+                onNavigateToMap = { navController.navigate(Map) },
             )
         }
         composable<Settings> {
@@ -87,3 +96,7 @@ data object Recipes
 @Serializable
 @SerialName("Memories")
 data object Memories
+
+@Serializable
+@SerialName("Restaurants")
+data object Restaurants

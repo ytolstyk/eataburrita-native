@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 ### Added
+- Restaurants screen: personally rate places (1–5 stars), write notes, and hide specific places from the map; accessible from the home menu and from the map's top-right button
+- Map reactively filters hidden restaurants (derivedStateOf); shows the closest non-hidden subset of the 20 API results; Burrito Roulette also excludes hidden places
+- Quick-edit notes (✏) button in the map place detail tray — shows "Add note" hint for first-time use; existing notes show personal star rating inline
+- "Go to Map" shortcut on the Restaurants empty state
 - Quick Log home screen widget (2×2): shows total burrito count and an "Eat!" button that instantly logs a new entry, skipping all modals
 - Stats home screen widget (4×1): pill-shaped widget with an orange "Eat!" button on the left, a stats panel in the center that auto-cycles through 5 stats (total, streak, best streak, avg/week, calories) every 5 seconds, and a blue Map button on the right; tapping the stats opens the app, tapping Map opens the map screen
 - Burrito Roulette — "🎰 Burrito Roulette" FAB on the Map screen spins a slot-machine animation through nearby restaurants and picks a random one; Navigate button opens Google Maps directions to the winner

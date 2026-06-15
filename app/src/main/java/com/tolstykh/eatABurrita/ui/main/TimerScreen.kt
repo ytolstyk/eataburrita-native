@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -118,6 +119,7 @@ fun TimerScreen(
     onOpenStats: () -> Unit,
     onOpenRecipes: () -> Unit,
     onOpenMemories: () -> Unit = {},
+    onOpenRestaurants: () -> Unit = {},
     openShareOnStart: Boolean = false,
     openCameraOnStart: Boolean = false,
 ) {
@@ -334,6 +336,11 @@ fun TimerScreen(
                 text = { Text("Memories") },
                 leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
                 onClick = { menuExpanded = false; onOpenMemories() },
+            )
+            DropdownMenuItem(
+                text = { Text("Restaurants") },
+                leadingIcon = { Icon(Icons.Default.Restaurant, contentDescription = null) },
+                onClick = { menuExpanded = false; onOpenRestaurants() },
             )
             DropdownMenuItem(
                 text = { Text("Settings") },

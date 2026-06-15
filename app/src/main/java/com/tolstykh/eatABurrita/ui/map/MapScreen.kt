@@ -31,9 +31,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
@@ -41,16 +44,20 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,11 +101,14 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.tolstykh.eatABurrita.BuildConfig
 import com.tolstykh.eatABurrita.R
+import com.tolstykh.eatABurrita.data.RestaurantNote
 import com.tolstykh.eatABurrita.helpers.distanceBetweenInMiles
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.location.hasLocationPermission
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.readablePlaceAddress
+import com.tolstykh.eatABurrita.ui.components.RestaurantNoteDialog
+import com.tolstykh.eatABurrita.ui.components.RestaurantNoteTarget
 import com.tolstykh.eatABurrita.ui.theme.LocalExColorScheme
 import com.tolstykh.eatABurrita.ui.theme.extendedLight
 import kotlinx.coroutines.tasks.await
@@ -107,7 +117,8 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun MapScreen(
     viewModel: MapScreenViewModel = hiltViewModel(),
-    onBackPressed: () -> Unit = {}
+    onBackPressed: () -> Unit = {},
+    onNavigateToRestaurants: () -> Unit = {},
 ) {
     MapsInitializer.initialize(LocalContext.current)
     val context = LocalContext.current
@@ -120,6 +131,8 @@ fun MapScreen(
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
     val placeStats by viewModel.placeStats.collectAsStateWithLifecycle()
     val selectedPlacePhotos by viewModel.selectedPlacePhotos.collectAsStateWithLifecycle()
+    val hiddenPlaceIds by viewModel.hiddenPlaceIds.collectAsStateWithLifecycle()
+    val restaurantNotes by viewModel.restaurantNotes.collectAsStateWithLifecycle()
 
     Surface {
         LaunchedEffect(!context.hasLocationPermission()) {
@@ -214,11 +227,16 @@ fun MapScreen(
                             currentPosition = location,
                             cameraState = cameraState,
                             onBackPressed = onBackPressed,
+                            onNavigateToRestaurants = onNavigateToRestaurants,
                             placeStats = placeStats,
                             getBurritoCount = viewModel::getBurritoCountForPlace,
                             getPlaceStats = viewModel::getPlaceStatsForPlace,
                             selectedPlacePhotos = selectedPlacePhotos,
                             onPlacePhotosRequested = viewModel::loadPhotosForPlace,
+                            hiddenPlaceIds = hiddenPlaceIds,
+                            restaurantNotes = restaurantNotes,
+                            onUpsertNote = viewModel::upsertNote,
+                            onDeleteNote = viewModel::deleteNote,
                         )
                     } else {
                         Box(modifier = Modifier.fillMaxSize()) {
@@ -262,21 +280,31 @@ fun FullMapView(
     currentPosition: LatLng,
     cameraState: CameraPositionState,
     onBackPressed: () -> Unit = {},
+    onNavigateToRestaurants: () -> Unit = {},
     placeStats: Map<String, MapScreenViewModel.PlaceStats> = emptyMap(),
     getBurritoCount: (Place, Map<String, MapScreenViewModel.PlaceStats>) -> Int = { _, _ -> 0 },
     getPlaceStats: (Place, Map<String, MapScreenViewModel.PlaceStats>) -> MapScreenViewModel.PlaceStats? = { _, _ -> null },
     selectedPlacePhotos: List<String> = emptyList(),
     onPlacePhotosRequested: (String?) -> Unit = {},
+    hiddenPlaceIds: Set<String> = emptySet(),
+    restaurantNotes: Map<String, RestaurantNote> = emptyMap(),
+    onUpsertNote: (RestaurantNote) -> Unit = {},
+    onDeleteNote: (RestaurantNote) -> Unit = {},
 ) {
     val marker = LatLng(currentPosition.latitude, currentPosition.longitude)
     val markerState = remember {
         MarkerState(position = marker)
     }
     val places = remember { mutableStateListOf<Place>() }
+    val currentHiddenIds by rememberUpdatedState(hiddenPlaceIds)
+    val visiblePlaces by remember {
+        derivedStateOf { places.filter { place -> val id = place.id; id != null && id !in currentHiddenIds } }
+    }
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
     var mapType by remember { mutableStateOf(MapType.NORMAL) }
     var showLayersMenu by remember { mutableStateOf(false) }
     var showRoulette by remember { mutableStateOf(false) }
+    var editingPlaceId by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val placesClient: PlacesClient = remember {
         if (!Places.isInitialized()) {
@@ -284,6 +312,13 @@ fun FullMapView(
         }
 
         Places.createClient(context)
+    }
+
+    // Auto-dismiss bottom tray if the selected place is now hidden
+    LaunchedEffect(visiblePlaces) {
+        if (selectedPlace != null && visiblePlaces.none { it.id == selectedPlace?.id }) {
+            selectedPlace = null
+        }
     }
 
     LaunchedEffect(selectedPlace) {
@@ -326,7 +361,8 @@ fun FullMapView(
             placesClient.searchNearby(searchNearbyRequest)
                 .addOnSuccessListener{ response ->
                     Log.d("Places", "Response: $response")
-                    response.places.let { places.addAll(it) }
+                    places.clear()
+                    places.addAll(response.places.filter { it.id != null })
                 }
                 .addOnFailureListener{ exception ->
                     Log.e("Places", "Error occurred: $exception")
@@ -363,7 +399,7 @@ fun FullMapView(
                     snippet = "You are hungry here",
                     draggable = true
                 )
-                places.forEach { place ->
+                visiblePlaces.forEach { place ->
                     place.location?.let { latLng ->
                         CustomMarker(
                             place = place,
@@ -388,6 +424,8 @@ fun FullMapView(
                         burritoCount = stats?.count ?: 0,
                         lastTimestampAtPlace = stats?.lastTimestamp,
                         photos = selectedPlacePhotos,
+                        personalNote = place.id?.let { restaurantNotes[it] },
+                        onEditNote = { editingPlaceId = place.id },
                         onNavigate = run {
                             val location = place.location
                             val name = place.displayName
@@ -424,6 +462,26 @@ fun FullMapView(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
+                    tint = extendedLight.extra.iconTint
+                )
+            }
+            // My Restaurants button
+            Button(
+                onClick = onNavigateToRestaurants,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 8.dp, top = 152.dp)
+                    .size(40.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = extendedLight.extra.iconBackground.copy(alpha = 0.85f)
+                ),
+                elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 4.dp),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.List,
+                    contentDescription = "My Restaurants",
                     tint = extendedLight.extra.iconTint
                 )
             }
@@ -509,7 +567,7 @@ fun FullMapView(
                     tint = extendedLight.extra.iconTint
                 )
             }
-            if (places.isNotEmpty() && selectedPlace == null) {
+            if (visiblePlaces.isNotEmpty() && selectedPlace == null) {
                 ExtendedFloatingActionButton(
                     onClick = { showRoulette = true },
                     modifier = Modifier
@@ -525,10 +583,31 @@ fun FullMapView(
     }
     if (showRoulette) {
         BurritoRouletteDialog(
-            places = places,
+            places = visiblePlaces,
             currentPosition = currentPosition,
             onDismiss = { showRoulette = false },
         )
+    }
+
+    // Note edit dialog
+    editingPlaceId?.let { pid ->
+        val place = visiblePlaces.find { it.id == pid }
+        if (place != null) {
+            RestaurantNoteDialog(
+                target = RestaurantNoteTarget.FromMap(place, restaurantNotes[pid]),
+                onSave = { draft ->
+                    onUpsertNote(draft)
+                    editingPlaceId = null
+                },
+                onDelete = { note ->
+                    onDeleteNote(note)
+                    editingPlaceId = null
+                },
+                onDismiss = { editingPlaceId = null },
+            )
+        } else {
+            editingPlaceId = null
+        }
     }
 }
 
@@ -584,12 +663,14 @@ fun PlaceBottomTray(
     burritoCount: Int = 0,
     lastTimestampAtPlace: Long? = null,
     photos: List<String> = emptyList(),
+    personalNote: RestaurantNote? = null,
+    onEditNote: () -> Unit = {},
     onNavigate: (() -> Unit)?,
 ) {
     val address = readablePlaceAddress(place.addressComponents)
     Surface(
         modifier = Modifier
-            .fillMaxWidth(0.72f)
+            .fillMaxWidth(0.82f)
             .padding(16.dp),
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 16.dp,
@@ -620,6 +701,28 @@ fun PlaceBottomTray(
                         style = MaterialTheme.typography.bodyMedium,
                         color = colorScheme.onPrimary,
                     )
+                }
+            }
+            // Personal rating row
+            if (personalNote != null && personalNote.personalRating > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "My rating:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onPrimary.copy(alpha = 0.8f),
+                    )
+                    for (i in 1..5) {
+                        Icon(
+                            imageVector = if (i <= personalNote.personalRating) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = colorScheme.onPrimary,
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
@@ -665,15 +768,42 @@ fun PlaceBottomTray(
                     }
                 }
             }
-            if (onNavigate != null) {
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Edit note button — icon-only when a note exists, text-only when no note yet
                 Button(
-                    onClick = onNavigate,
+                    onClick = onEditNote,
                     shape = CircleShape,
-                    modifier = Modifier.height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary)
+                    modifier = Modifier.height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary),
                 ) {
-                    Text("Navigate", fontSize = 18.dp.value.sp, color = colorScheme.onSecondary)
+                    if (personalNote == null) {
+                        Text(
+                            "Add note",
+                            fontSize = 13.sp,
+                            color = colorScheme.onSecondary,
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit notes",
+                            tint = colorScheme.onSecondary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+                if (onNavigate != null) {
+                    Button(
+                        onClick = onNavigate,
+                        shape = CircleShape,
+                        modifier = Modifier.height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary)
+                    ) {
+                        Text("Navigate", fontSize = 14.sp, color = colorScheme.onSecondary)
+                    }
                 }
             }
         }

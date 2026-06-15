@@ -16,9 +16,17 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): BurritoDatabase =
         Room.databaseBuilder(context, BurritoDatabase::class.java, "burrito_db")
-            .addMigrations(BurritoDatabase.MIGRATION_1_2, BurritoDatabase.MIGRATION_2_3, BurritoDatabase.MIGRATION_3_4)
+            .addMigrations(
+                BurritoDatabase.MIGRATION_1_2,
+                BurritoDatabase.MIGRATION_2_3,
+                BurritoDatabase.MIGRATION_3_4,
+                BurritoDatabase.MIGRATION_4_5,
+            )
             .build()
 
     @Provides
     fun provideDao(db: BurritoDatabase): BurritoDao = db.burritoDao()
+
+    @Provides
+    fun provideRestaurantNoteDao(db: BurritoDatabase): RestaurantNoteDao = db.restaurantNoteDao()
 }

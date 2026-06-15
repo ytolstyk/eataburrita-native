@@ -6,6 +6,9 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.model.Place
 import com.tolstykh.eatABurrita.data.BurritoDao
+import com.tolstykh.eatABurrita.data.RestaurantNote
+import com.tolstykh.eatABurrita.data.RestaurantNoteDao
+import com.tolstykh.eatABurrita.data.upsertPreservingCreatedAt
 import com.tolstykh.eatABurrita.location.GetLocationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -21,6 +24,7 @@ import kotlinx.coroutines.launch
 class MapScreenViewModel @Inject constructor(
     private val getLocationUseCase: GetLocationUseCase,
     private val dao: BurritoDao,
+    private val restaurantNoteDao: RestaurantNoteDao,
 ) : ViewModel() {
     private val _viewState: MutableStateFlow<ViewState> = MutableStateFlow(ViewState.Loading)
     val viewState = _viewState.asStateFlow()
@@ -47,6 +51,14 @@ class MapScreenViewModel @Inject constructor(
     private val _selectedPlacePhotos = MutableStateFlow<List<String>>(emptyList())
     val selectedPlacePhotos: StateFlow<List<String>> = _selectedPlacePhotos.asStateFlow()
 
+    val hiddenPlaceIds: StateFlow<Set<String>> = restaurantNoteDao.getHiddenPlaceIds()
+        .map { it.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val restaurantNotes: StateFlow<Map<String, RestaurantNote>> = restaurantNoteDao.getAll()
+        .map { list -> list.associateBy { it.placeId } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     fun loadPhotosForPlace(locationName: String?) {
         _selectedPlacePhotos.value = emptyList()
         if (locationName.isNullOrBlank()) return
@@ -64,6 +76,14 @@ class MapScreenViewModel @Inject constructor(
         val loc = place.location ?: return null
         val key = "%.4f,%.4f".format(loc.latitude, loc.longitude)
         return stats[key]
+    }
+
+    fun upsertNote(draft: RestaurantNote) = viewModelScope.launch {
+        restaurantNoteDao.upsertPreservingCreatedAt(draft)
+    }
+
+    fun deleteNote(note: RestaurantNote) = viewModelScope.launch {
+        restaurantNoteDao.delete(note)
     }
 
     fun handle(event: PermissionEvent) {
