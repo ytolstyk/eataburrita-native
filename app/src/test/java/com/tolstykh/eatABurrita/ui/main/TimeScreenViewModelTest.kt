@@ -71,6 +71,8 @@ class TimeScreenViewModelTest {
         every { dao.getDistinctDays() } returns flowOf(emptyList<DayString>())
         every { dao.getHourOfDayCounts() } returns flowOf(emptyList())
         every { dao.getDayOfWeekCounts() } returns flowOf(emptyList())
+        coEvery { dao.getCountForDay(any(), any()) } returns 0
+        coEvery { dao.getEntriesInRange(any(), any()) } returns emptyList()
     }
 
     private fun makeViewModel() = TimeScreenViewModel(dao, appPrefs, getLocationUseCase, burritoClassifier, context)
@@ -160,6 +162,8 @@ class TimeScreenViewModelTest {
         every { dao.getDistinctDays() } returns flowOf(emptyList<DayString>())
         every { dao.getHourOfDayCounts() } returns flowOf(emptyList())
         every { dao.getDayOfWeekCounts() } returns flowOf(emptyList())
+        coEvery { dao.getCountForDay(any(), any()) } returns 0
+        coEvery { dao.getEntriesInRange(any(), any()) } returns emptyList()
 
         val viewModel = makeViewModel()
         val states = mutableListOf<TimeScreenViewModel.TimeScreenUIState>()

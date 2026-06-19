@@ -33,6 +33,29 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
+private const val ON_THIS_DAY_WINDOW_DAYS = 3L
+
+data class WeekEntryUi(
+    val timestamp: Long,
+    val locationName: String?,
+)
+
+data class OnThisDayData(
+    val yearAgoDate: LocalDate,
+    val dayCount: Int,
+    val topLocation: String?,
+    val weekEntries: List<WeekEntryUi>,
+    val weekCount: Int,
+    val weekDays: List<LocalDate>,
+) {
+    val summary: String
+        get() {
+            val burritoText = if (dayCount == 1) "1 burrito" else "$dayCount burritos"
+            return if (topLocation != null) "You had $burritoText at $topLocation 🌯"
+            else "You had $burritoText 🌯"
+        }
+}
+
 data class TimeScreenData(
     val burritoCount: Int,
     val lastTimestamp: Long,
@@ -172,10 +195,53 @@ class TimeScreenViewModel @Inject constructor(
     private val _dayLocationModal = MutableStateFlow<DayLocationData?>(null)
     val dayLocationModal: StateFlow<DayLocationData?> = _dayLocationModal.asStateFlow()
 
+    private val _onThisDayData = MutableStateFlow<OnThisDayData?>(null)
+    val onThisDayData: StateFlow<OnThisDayData?> = _onThisDayData.asStateFlow()
+
+    fun dismissOnThisDay() {
+        _onThisDayData.value = null
+    }
+
+    private val _onThisDayWeekVisible = MutableStateFlow(false)
+    val onThisDayWeekVisible: StateFlow<Boolean> = _onThisDayWeekVisible.asStateFlow()
+
+    fun openOnThisDayWeek() { _onThisDayWeekVisible.value = true }
+    fun dismissOnThisDayWeek() { _onThisDayWeekVisible.value = false }
+
     private var locationJob: Job? = null
 
     init {
         refreshLocation()
+        loadOnThisDay()
+    }
+
+    private fun loadOnThisDay() {
+        viewModelScope.launch {
+            val today = LocalDate.now(zone)
+            val yearAgo = today.minusYears(1)
+            val weekStart = yearAgo.minusDays(ON_THIS_DAY_WINDOW_DAYS)
+            val weekStartMs = weekStart.atStartOfDay(zone).toInstant().toEpochMilli()
+            val weekEndMs = yearAgo.plusDays(ON_THIS_DAY_WINDOW_DAYS + 1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+            val allWeekEntries = dao.getEntriesInRange(weekStartMs, weekEndMs)
+            val dayStartMs = yearAgo.atStartOfDay(zone).toInstant().toEpochMilli()
+            val dayEndMs = yearAgo.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val dayEntries = allWeekEntries.filter { it.timestamp in dayStartMs until dayEndMs }
+            if (dayEntries.isEmpty()) return@launch
+
+            val topLocation = dayEntries.mostFrequentLocationName()
+            val weekDayCount = (ON_THIS_DAY_WINDOW_DAYS * 2 + 1).toInt()
+            val weekDays = (0 until weekDayCount).map { weekStart.plusDays(it.toLong()) }
+
+            _onThisDayData.value = OnThisDayData(
+                yearAgoDate = yearAgo,
+                dayCount = dayEntries.size,
+                topLocation = topLocation,
+                weekEntries = allWeekEntries.map { WeekEntryUi(it.timestamp, it.locationName) },
+                weekCount = allWeekEntries.size,
+                weekDays = weekDays,
+            )
+        }
     }
 
     fun refreshLocation() {
@@ -364,15 +430,17 @@ class TimeScreenViewModel @Inject constructor(
     }
 
     private fun buildFavoritePlace(entries: List<BurritoEntry>): Triple<String?, Double?, Double?> {
-        val favoriteName = entries
-            .mapNotNull { it.locationName }
-            .groupingBy { it }
-            .eachCount()
-            .maxByOrNull { it.value }
-            ?.key ?: return Triple(null, null, null)
+        val favoriteName = entries.mostFrequentLocationName() ?: return Triple(null, null, null)
         val entry = entries.first { it.locationName == favoriteName }
         return Triple(favoriteName, entry.locationLat, entry.locationLong)
     }
+
+    private fun List<BurritoEntry>.mostFrequentLocationName(): String? =
+        mapNotNull { it.locationName }
+            .groupingBy { it }
+            .eachCount()
+            .maxByOrNull { it.value }
+            ?.key
 
     private fun buildDailyCounts(entries: List<BurritoEntry>, today: LocalDate): List<Int> {
         val zone = ZoneId.systemDefault()

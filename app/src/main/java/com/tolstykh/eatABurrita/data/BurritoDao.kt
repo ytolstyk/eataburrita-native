@@ -118,4 +118,7 @@ interface BurritoDao {
 
     @Query("SELECT * FROM burrito_entries WHERE locationName = :locationName AND photoPath IS NOT NULL ORDER BY timestamp DESC LIMIT 6")
     suspend fun getEntriesWithPhotoForLocation(locationName: String): List<BurritoEntry>
+
+    @Query("SELECT * FROM burrito_entries WHERE timestamp >= :start AND timestamp < :end ORDER BY timestamp ASC")
+    suspend fun getEntriesInRange(start: Long, end: Long): List<BurritoEntry>
 }

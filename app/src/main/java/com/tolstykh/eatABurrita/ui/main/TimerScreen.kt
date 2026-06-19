@@ -140,6 +140,8 @@ fun TimerScreen(
     }
     val verdictState by viewModel.verdictState.collectAsStateWithLifecycle()
     val celebrationState by viewModel.celebrationState.collectAsStateWithLifecycle()
+    val onThisDayData by viewModel.onThisDayData.collectAsStateWithLifecycle()
+    val onThisDayWeekVisible by viewModel.onThisDayWeekVisible.collectAsStateWithLifecycle()
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showCameraRationale by remember { mutableStateOf(false) }
     val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
@@ -248,6 +250,14 @@ fun TimerScreen(
             Spacer(modifier = Modifier.height(16.dp))
             val todayFact = remember { BURRITO_FACTS[LocalDate.now().dayOfYear % BURRITO_FACTS.size] }
             BurritoFactCard(fact = todayFact)
+            onThisDayData?.let { otd ->
+                Spacer(modifier = Modifier.height(12.dp))
+                OnThisDayCard(
+                    data = otd,
+                    onDismiss = viewModel::dismissOnThisDay,
+                    onShowWeek = viewModel::openOnThisDayWeek,
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             BurritoConsumptionChart(
                 modifier = Modifier
@@ -438,6 +448,15 @@ fun TimerScreen(
             data = data,
             onDismiss = { showShareCard = false },
         )
+    }
+
+    if (onThisDayWeekVisible) {
+        onThisDayData?.let { otd ->
+            OnThisDayWeekModal(
+                data = otd,
+                onDismiss = viewModel::dismissOnThisDayWeek,
+            )
+        }
     }
 }
 

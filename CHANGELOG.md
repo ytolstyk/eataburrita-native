@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- "On This Day" home screen card — surfaces a nostalgic one-liner when you have burrito data from exactly one year ago today ("You had 3 burritos at Chipotle 🌯"); tap the card for a 7-day week recap modal showing per-day counts and locations; dismissable for the session
 - Restaurants screen: personally rate places (1–5 stars), write notes, and hide specific places from the map; accessible from the home menu and from the map's top-right button
 - Map reactively filters hidden restaurants (derivedStateOf); shows the closest non-hidden subset of the 20 API results; Burrito Roulette also excludes hidden places
 - Quick-edit notes (✏) button in the map place detail tray — shows "Add note" hint for first-time use; existing notes show personal star rating inline
