@@ -141,10 +141,10 @@ internal fun BurritoStatsWidgetContent(
 ) {
     val context    = LocalContext.current
     val cellHeight = LocalSize.current.height
-    val cellWidth  = LocalSize.current.width
 
-    val widthPerCircle = ((cellWidth - 80.dp - 8.dp) / 4).coerceAtLeast(36.dp)
-    val circleDp   = minOf(iconSizeDp, cellHeight - 8.dp, widthPerCircle)
+    // Cap circles at their initial 4-cell size (48dp) so any extra width from
+    // resizing goes entirely to the stats info area, not to bigger buttons.
+    val circleDp   = minOf(iconSizeDp, cellHeight - 8.dp, 48.dp).coerceAtLeast(36.dp)
     val pillHeight = (circleDp + 8.dp).coerceAtMost(cellHeight)
 
     val stat = stats.getOrElse(statIndex % stats.size) { stats.first() }
