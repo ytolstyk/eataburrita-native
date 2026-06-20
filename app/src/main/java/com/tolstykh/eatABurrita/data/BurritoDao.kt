@@ -34,6 +34,10 @@ data class MonthCount(
 data class DayString(
     @ColumnInfo(name = "day") val day: String, // "YYYY-MM-DD"
 )
+data class DayCount(
+    @ColumnInfo(name = "day") val day: String, // "YYYY-MM-DD"
+    @ColumnInfo(name = "cnt") val cnt: Int,
+)
 
 @Dao
 interface BurritoDao {
@@ -112,6 +116,9 @@ interface BurritoDao {
 
     @Query("SELECT COUNT(DISTINCT locationName) FROM burrito_entries WHERE locationName IS NOT NULL AND locationName != ''")
     fun getDistinctLocationCount(): Flow<Int>
+
+    @Query("SELECT date(datetime(timestamp/1000, 'unixepoch', 'localtime')) as day, COUNT(*) as cnt FROM burrito_entries WHERE timestamp >= :since GROUP BY day ORDER BY day ASC")
+    fun getDailyCountsSince(since: Long): Flow<List<DayCount>>
 
     @Query("SELECT * FROM burrito_entries WHERE photoPath IS NOT NULL ORDER BY timestamp DESC")
     fun getEntriesWithPhoto(): Flow<List<BurritoEntry>>

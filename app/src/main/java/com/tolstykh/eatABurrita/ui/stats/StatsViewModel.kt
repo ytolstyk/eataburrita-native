@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -31,6 +32,25 @@ data class StatsData(
     val totalCalories: Int = 0,
     val distinctLocationCount: Int = 0,
     val achievements: List<Achievement> = emptyList(),
+    val heatmapData: Map<LocalDate, Int> = emptyMap(),
+    val heatmapStartDate: LocalDate = LocalDate.MIN,
+)
+
+private data class SummaryBundle(
+    val totalCount: Int,
+    val currentStreak: Int,
+    val bestStreak: Int,
+    val avgPerWeek: Float,
+    val totalCalories: Int,
+    val distinctLocationCount: Int,
+)
+
+private data class ChartBundle(
+    val dailyCounts: List<Int>,
+    val dayOfWeekCounts: List<Int>,
+    val hourOfDayCounts: List<Int>,
+    val monthlyCounts: List<Pair<String, Int>>,
+    val topLocations: List<Pair<String, Int>>,
 )
 
 @HiltViewModel
@@ -43,6 +63,15 @@ class StatsViewModel @Inject constructor(
     private val thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
     private val twelveMonthsAgo = YearMonth.now(zone).minusMonths(12)
         .atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+    private val heatmapStartDate = run {
+        val today = LocalDate.now(zone)
+        val thisSunday = today.minusDays((today.dayOfWeek.value % 7).toLong())
+        thisSunday.minusWeeks(52)
+    }
+    private val heatmapStartMs = heatmapStartDate.atStartOfDay(zone).toInstant().toEpochMilli()
+
+    private val monthKeyFmt = DateTimeFormatter.ofPattern("yyyy-MM")
+    private val monthLabelFmt = DateTimeFormatter.ofPattern("MMM")
 
     // Group 1: summary — total count, distinct days (for streaks + avg/week), total calories, distinct locations
     private val summaryFlow = combine(
@@ -52,7 +81,7 @@ class StatsViewModel @Inject constructor(
         dao.getDistinctLocationCount(),
     ) { count, dayStrings, totalCalories, distinctLocationCount ->
         val today = LocalDate.now(zone)
-        val days = dayStrings.map { LocalDate.parse(it.day) }
+        val days = dayStrings.mapNotNull { runCatching { LocalDate.parse(it.day) }.getOrNull() }
         val daySet = days.toHashSet()
 
         var currentStreak = 0
@@ -71,26 +100,30 @@ class StatsViewModel @Inject constructor(
             count.toFloat() / weeksSince
         }
 
-        Pair(
-            Triple(count, Triple(currentStreak, bestStreak, avgPerWeek), totalCalories),
-            distinctLocationCount,
+        SummaryBundle(
+            totalCount = count,
+            currentStreak = currentStreak,
+            bestStreak = bestStreak,
+            avgPerWeek = avgPerWeek,
+            totalCalories = totalCalories,
+            distinctLocationCount = distinctLocationCount,
         )
     }
 
     // Group 2: chart data — daily, day-of-week, hour, monthly, locations
     private val chartFlow = combine(
-        dao.getEntriesSince(thirtyDaysAgo),
+        dao.getDailyCountsSince(thirtyDaysAgo),
         dao.getDayOfWeekCounts(),
         dao.getHourOfDayCounts(),
         dao.getMonthlyCounts(twelveMonthsAgo),
         dao.getTopLocations(),
-    ) { recentEntries, dowRows, hourRows, monthRows, locationRows ->
+    ) { recentDayCounts, dowRows, hourRows, monthRows, locationRows ->
         val today = LocalDate.now(zone)
 
-        // 30-day daily counts — bounded query, cheap to process
-        val countByDay = recentEntries
-            .map { Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
-            .groupingBy { it }.eachCount()
+        // 30-day daily counts — aggregate from SQL, no full-row deserialization
+        val countByDay = recentDayCounts.mapNotNull { row ->
+            runCatching { LocalDate.parse(row.day) }.getOrNull()?.let { it to row.cnt }
+        }.toMap()
         val dailyCounts = (29 downTo 0).map { daysAgo ->
             countByDay[today.minusDays(daysAgo.toLong())] ?: 0
         }
@@ -107,36 +140,45 @@ class StatsViewModel @Inject constructor(
         val monthlyMap = monthRows.associate { it.month to it.cnt }
         val monthlyCounts = (11 downTo 0).map { monthsAgo ->
             val month = YearMonth.now(zone).minusMonths(monthsAgo.toLong())
-            val key = month.format(DateTimeFormatter.ofPattern("yyyy-MM"))
-            Pair(month.format(DateTimeFormatter.ofPattern("MMM")), monthlyMap[key] ?: 0)
+            Pair(month.format(monthLabelFmt), monthlyMap[month.format(monthKeyFmt)] ?: 0)
         }
 
         // Top locations — already limited to 5 by SQL
         val topLocations = locationRows.map { Pair(it.locationName, it.cnt) }
 
-        listOf(dailyCounts, dowArr.toList(), hourArr.toList(), monthlyCounts, topLocations)
+        ChartBundle(
+            dailyCounts = dailyCounts,
+            dayOfWeekCounts = dowArr.toList(),
+            hourOfDayCounts = hourArr.toList(),
+            monthlyCounts = monthlyCounts,
+            topLocations = topLocations,
+        )
     }
 
-    @Suppress("UNCHECKED_CAST")
-    val statsData: StateFlow<StatsData> = combine(summaryFlow, chartFlow) { summary, charts ->
-        val (summaryCore, distinctLocationCount) = summary
-        val (count, streakData, totalCalories) = summaryCore
-        val (currentStreak, bestStreak, avgPerWeek) = streakData
+    // Group 3: heatmap — kept separate from chartFlow because chartFlow already uses the 5-arg combine limit
+    private val heatmapFlow = dao.getDailyCountsSince(heatmapStartMs).map { rows ->
+        rows.mapNotNull { row ->
+            runCatching { LocalDate.parse(row.day) }.getOrNull()?.let { it to row.cnt }
+        }.toMap()
+    }
 
+    val statsData: StateFlow<StatsData> = combine(summaryFlow, chartFlow, heatmapFlow) { summary, charts, heatmap ->
         val base = StatsData(
-            totalCount = count,
-            dailyCounts = charts[0] as List<Int>,
-            dayOfWeekCounts = charts[1] as List<Int>,
-            hourOfDayCounts = charts[2] as List<Int>,
-            monthlyCounts = charts[3] as List<Pair<String, Int>>,
-            topLocations = charts[4] as List<Pair<String, Int>>,
-            currentStreak = currentStreak,
-            bestStreak = bestStreak,
-            avgPerWeek = avgPerWeek,
-            totalCalories = totalCalories,
-            distinctLocationCount = distinctLocationCount,
+            totalCount = summary.totalCount,
+            dailyCounts = charts.dailyCounts,
+            dayOfWeekCounts = charts.dayOfWeekCounts,
+            hourOfDayCounts = charts.hourOfDayCounts,
+            monthlyCounts = charts.monthlyCounts,
+            topLocations = charts.topLocations,
+            currentStreak = summary.currentStreak,
+            bestStreak = summary.bestStreak,
+            avgPerWeek = summary.avgPerWeek,
+            totalCalories = summary.totalCalories,
+            distinctLocationCount = summary.distinctLocationCount,
+            heatmapData = heatmap,
+            heatmapStartDate = heatmapStartDate,
         )
-        base.copy(achievements = computeAchievements(base, distinctLocationCount))
+        base.copy(achievements = computeAchievements(base, summary.distinctLocationCount))
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),

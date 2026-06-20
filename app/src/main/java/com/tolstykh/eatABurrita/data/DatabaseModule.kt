@@ -21,6 +21,7 @@ object DatabaseModule {
                 BurritoDatabase.MIGRATION_2_3,
                 BurritoDatabase.MIGRATION_3_4,
                 BurritoDatabase.MIGRATION_4_5,
+                BurritoDatabase.MIGRATION_5_6,
             )
             .build()
 

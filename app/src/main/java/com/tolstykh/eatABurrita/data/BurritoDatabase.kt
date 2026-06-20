@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [BurritoEntry::class, RestaurantNote::class], version = 5)
+@Database(entities = [BurritoEntry::class, RestaurantNote::class], version = 6)
 abstract class BurritoDatabase : RoomDatabase() {
     abstract fun burritoDao(): BurritoDao
     abstract fun restaurantNoteDao(): RestaurantNoteDao
@@ -46,6 +46,12 @@ abstract class BurritoDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_burrito_entries_timestamp` ON `burrito_entries` (`timestamp`)")
             }
         }
     }
