@@ -62,6 +62,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.flow.first
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.ui.main.BurritoConsumptionChart
+import com.tolstykh.eatABurrita.ui.components.EmptyState
 
 @Composable
 fun StatsScreen(
@@ -122,27 +123,11 @@ fun StatsScreen(
             ) {
                 if (selectedTab == 0) {
                     if (stats.totalCount == 0) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 64.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "No stats yet",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = colorScheme.onSurface,
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    text = "Start logging burritos to see your stats here.",
-                                    fontSize = 14.sp,
-                                    color = colorScheme.onSurface.copy(alpha = 0.55f),
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-                        }
+                        EmptyState(
+                            title = "No stats yet",
+                            body = "Start logging burritos to see your stats here.",
+                            modifier = Modifier.padding(vertical = 64.dp),
+                        )
                     } else {
                         SummarySection(stats)
 

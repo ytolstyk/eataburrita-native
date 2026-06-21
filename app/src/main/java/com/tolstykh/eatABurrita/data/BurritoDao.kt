@@ -38,6 +38,12 @@ data class DayCount(
     @ColumnInfo(name = "day") val day: String, // "YYYY-MM-DD"
     @ColumnInfo(name = "cnt") val cnt: Int,
 )
+data class GalleryEntry(
+    @ColumnInfo(name = "id") val id: Long,
+    @ColumnInfo(name = "timestamp") val timestamp: Long,
+    @ColumnInfo(name = "locationName") val locationName: String?,
+    @ColumnInfo(name = "calories") val calories: Int?,
+)
 
 @Dao
 interface BurritoDao {
@@ -122,6 +128,9 @@ interface BurritoDao {
 
     @Query("SELECT * FROM burrito_entries WHERE photoPath IS NOT NULL ORDER BY timestamp DESC")
     fun getEntriesWithPhoto(): Flow<List<BurritoEntry>>
+
+    @Query("SELECT id, timestamp, locationName, calories FROM burrito_entries ORDER BY timestamp DESC")
+    fun getAllForGallery(): Flow<List<GalleryEntry>>
 
     @Query("SELECT * FROM burrito_entries WHERE locationName = :locationName AND photoPath IS NOT NULL ORDER BY timestamp DESC LIMIT 6")
     suspend fun getEntriesWithPhotoForLocation(locationName: String): List<BurritoEntry>
