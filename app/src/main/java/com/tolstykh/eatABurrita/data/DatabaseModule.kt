@@ -22,6 +22,7 @@ object DatabaseModule {
                 BurritoDatabase.MIGRATION_3_4,
                 BurritoDatabase.MIGRATION_4_5,
                 BurritoDatabase.MIGRATION_5_6,
+                BurritoDatabase.MIGRATION_6_7,
             )
             .build()
 
@@ -30,4 +31,7 @@ object DatabaseModule {
 
     @Provides
     fun provideRestaurantNoteDao(db: BurritoDatabase): RestaurantNoteDao = db.restaurantNoteDao()
+
+    @Provides
+    fun provideMenuScanDao(db: BurritoDatabase): MenuScanDao = db.menuScanDao()
 }

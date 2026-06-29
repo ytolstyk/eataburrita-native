@@ -5,10 +5,11 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [BurritoEntry::class, RestaurantNote::class], version = 6)
+@Database(entities = [BurritoEntry::class, RestaurantNote::class, MenuScan::class], version = 7)
 abstract class BurritoDatabase : RoomDatabase() {
     abstract fun burritoDao(): BurritoDao
     abstract fun restaurantNoteDao(): RestaurantNoteDao
+    abstract fun menuScanDao(): MenuScanDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -52,6 +53,21 @@ abstract class BurritoDatabase : RoomDatabase() {
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_burrito_entries_timestamp` ON `burrito_entries` (`timestamp`)")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `menu_scans` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `restaurantName` TEXT NOT NULL,
+                        `scannedAt` INTEGER NOT NULL,
+                        `itemsJson` TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

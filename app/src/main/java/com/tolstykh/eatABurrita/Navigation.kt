@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import com.tolstykh.eatABurrita.ui.main.TimerScreen
 import com.tolstykh.eatABurrita.ui.map.MapScreen
 import com.tolstykh.eatABurrita.ui.memories.MemoriesScreen
+import com.tolstykh.eatABurrita.ui.menuscanner.MenuScannerScreen
 import com.tolstykh.eatABurrita.ui.recipes.RecipesScreen
 import com.tolstykh.eatABurrita.ui.restaurants.RestaurantsScreen
 import com.tolstykh.eatABurrita.ui.settings.SettingsScreen
@@ -38,6 +39,7 @@ fun Navigation(
                 onOpenRecipes = { navController.navigate(Recipes) },
                 onOpenMemories = { navController.navigate(Memories) },
                 onOpenRestaurants = { navController.navigate(Restaurants) },
+                onOpenMenuScanner = { navController.navigate(MenuScanner) },
                 openShareOnStart = openShareOnStart,
                 openCameraOnStart = openCameraOnStart,
             )
@@ -70,6 +72,9 @@ fun Navigation(
         composable<Memories> {
             MemoriesScreen(onBack = { navController.popBackStack() })
         }
+        composable<MenuScanner> {
+            MenuScannerScreen(onBackPressed = { navController.popBackStack() })
+        }
     }
 }
 
@@ -100,3 +105,7 @@ data object Memories
 @Serializable
 @SerialName("Restaurants")
 data object Restaurants
+
+@Serializable
+@SerialName("MenuScanner")
+data object MenuScanner

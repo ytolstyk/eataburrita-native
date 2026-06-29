@@ -2,5 +2,6 @@
 <paths>
     <cache-path name="burrito_photos" path="burrito_photos/" />
     <cache-path name="share" path="share/" />
+    <cache-path name="menu_scans" path="menu_scans/" />
     <files-path name="burrito_photo_log" path="burrito_photo_log/" />
 </paths>
