@@ -16,6 +16,7 @@
 
 ### Fixed
 - Location picker modal: keyboard no longer dismisses while typing a restaurant name; autocomplete suggestions now render inline (no popup window) so the IME stays open, and the search field is auto-focused when the dialog opens
+- "Share as Image" now captures the actual share card instead of whatever screen was behind the dialog — the capture was reading pixels from the host Activity's window while the card renders in the Dialog's own separate window; now resolves the real dialog window via `DialogWindowProvider` before calling `PixelCopy`
 
 ### Changed
 - Burrito scanner now uses Gemini 1.5 Flash (cloud vision API) instead of the local TFLite model — delivers witty, burrito-oracle commentary; images are compressed to 512px before sending to reduce token cost

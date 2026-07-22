@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.FileProvider
 import com.tolstykh.eatABurrita.helpers.BurritoPersonality
 import com.tolstykh.eatABurrita.helpers.computeBurritoPersonality
@@ -290,6 +291,15 @@ fun BurritoShareCardDialog(
     }
 }
 
+private fun findDialogWindow(view: android.view.View): android.view.Window? {
+    var parent: android.view.ViewParent? = view.parent
+    while (parent != null) {
+        if (parent is DialogWindowProvider) return parent.window
+        parent = parent.parent
+    }
+    return null
+}
+
 private suspend fun captureRegion(view: android.view.View, boundsF: android.graphics.RectF): Bitmap {
     val bounds = Rect(
         boundsF.left.toInt(),
@@ -297,10 +307,11 @@ private suspend fun captureRegion(view: android.view.View, boundsF: android.grap
         boundsF.right.toInt(),
         boundsF.bottom.toInt(),
     )
+    val window = findDialogWindow(view) ?: (view.context as Activity).window
     val bitmap = Bitmap.createBitmap(bounds.width(), bounds.height(), Bitmap.Config.ARGB_8888)
     return suspendCancellableCoroutine { cont ->
         PixelCopy.request(
-            (view.context as Activity).window,
+            window,
             bounds,
             bitmap,
             { result ->
