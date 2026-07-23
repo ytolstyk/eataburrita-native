@@ -16,9 +16,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -45,6 +48,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +59,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.FileProvider
+import com.tolstykh.eatABurrita.formatDuration
 import com.tolstykh.eatABurrita.helpers.BurritoPersonality
 import com.tolstykh.eatABurrita.helpers.computeBurritoPersonality
 import com.tolstykh.eatABurrita.helpers.getRandomMessageWithStats
@@ -64,6 +69,7 @@ import com.tolstykh.eatABurrita.ui.theme.Purple
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
+import java.time.Instant
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -90,6 +96,31 @@ fun BurritoShareCardContent(
                 fontWeight = FontWeight.Medium,
                 color = Color.White.copy(alpha = 0.85f),
             )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Time since last burrito
+            Text(
+                text = "TIME SINCE LAST BURRITO",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.sp,
+                color = Color.White.copy(alpha = 0.7f),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (data.lastTimestamp > 0) {
+                    formatDuration(Instant.now().toEpochMilli() - data.lastTimestamp)
+                } else {
+                    "0 days, 00:00:00"
+                },
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(20.dp))
 
             // Annual count
@@ -193,6 +224,7 @@ fun BurritoShareCardDialog(
     val scope = rememberCoroutineScope()
     var cardBounds by remember { mutableStateOf<android.graphics.RectF?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
+    val maxDialogHeight = LocalConfiguration.current.screenHeightDp.dp * 0.9f
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -203,10 +235,13 @@ fun BurritoShareCardDialog(
             color = colorScheme.surface,
             modifier = Modifier
                 .fillMaxWidth(0.92f)
+                .heightIn(max = maxDialogHeight)
                 .padding(vertical = 24.dp),
         ) {
             Column(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Row(

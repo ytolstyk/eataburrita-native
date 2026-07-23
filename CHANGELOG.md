@@ -15,6 +15,8 @@
 - Burrito Roulette — "🎰 Burrito Roulette" FAB on the Map screen spins a slot-machine animation through nearby restaurants and picks a random one; Navigate button opens Google Maps directions to the winner
 
 ### Fixed
+- Share card dialog now scrolls when its content is taller than the screen, so the "Share as Image"/"Share as Text" buttons at the bottom stay reachable instead of being clipped off-screen
+- Share card now always shows "time since last burrito" as the hero stat, matching the app's core purpose — previously it only showed burrito count, streaks, and personality
 - Location picker modal: keyboard no longer dismisses while typing a restaurant name; autocomplete suggestions now render inline (no popup window) so the IME stays open, and the search field is auto-focused when the dialog opens
 - "Share as Image" now captures the actual share card instead of whatever screen was behind the dialog — the capture was reading pixels from the host Activity's window while the card renders in the Dialog's own separate window; now resolves the real dialog window via `DialogWindowProvider` before calling `PixelCopy`
 
