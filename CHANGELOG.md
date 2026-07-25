@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [1.27] - 2026-07-23
 ### Added
 - Menu Scanner — new screen (accessible from the home overflow menu) that lets you photograph one or more menu pages and sends them all to Gemini in a single request; results appear in a 2-column staggered grid showing burrito name, price, and ingredient chips; supports up to 4 pages per session with a "Scan Now" / "Add Page" / "Start Over" workflow; optionally save the scanned list under a restaurant name (free text or Places autocomplete); images are compressed to 1024px JPEG-75 before sending
 - Pixel Burrito Gallery — "Gallery" tab in the Memories screen shows every logged burrito as a unique deterministic pixel-art sprite (16×16, seeded from timestamp); tap any sprite to see burrito number, date, location, and calories; sprites are rasterized once to an ImageBitmap and cached in the ViewModel so they survive LazyGrid recycling without jank
