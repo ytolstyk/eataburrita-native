@@ -1,13 +1,8 @@
 package com.tolstykh.eatABurrita.ui.share
 
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Rect
-import android.os.Handler
-import android.os.Looper
-import android.view.PixelCopy
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
@@ -57,8 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.core.content.FileProvider
 import com.tolstykh.eatABurrita.formatDuration
 import com.tolstykh.eatABurrita.helpers.BurritoPersonality
 import com.tolstykh.eatABurrita.helpers.computeBurritoPersonality
@@ -67,11 +61,7 @@ import com.tolstykh.eatABurrita.ui.main.TimeScreenData
 import com.tolstykh.eatABurrita.ui.theme.Orange
 import com.tolstykh.eatABurrita.ui.theme.Purple
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.io.File
 import java.time.Instant
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 @Composable
 fun BurritoShareCardContent(
@@ -81,7 +71,7 @@ fun BurritoShareCardContent(
     val personality = remember(data.hourOfDayCounts, data.dayOfWeekCounts) {
         computeBurritoPersonality(data.hourOfDayCounts, data.dayOfWeekCounts)
     }
-    val gradient = Brush.verticalGradient(listOf(Orange, Purple))
+    val gradient = remember { Brush.verticalGradient(listOf(Orange, Purple)) }
 
     Box(
         modifier = modifier
@@ -220,9 +210,8 @@ fun BurritoShareCardDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val view = LocalView.current
     val scope = rememberCoroutineScope()
-    var cardBounds by remember { mutableStateOf<android.graphics.RectF?>(null) }
+    var cardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
     val maxDialogHeight = LocalConfiguration.current.screenHeightDp.dp * 0.9f
 
@@ -230,6 +219,7 @@ fun BurritoShareCardDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val view = LocalView.current
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = colorScheme.surface,
@@ -266,23 +256,25 @@ fun BurritoShareCardDialog(
                     data = data,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onGloballyPositioned { coords ->
-                            val rect = coords.boundsInWindow()
-                            cardBounds = android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom)
-                        },
+                        .onGloballyPositioned { coords -> cardCoordinates = coords },
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Button(
                     onClick = {
-                        val bounds = cardBounds ?: return@Button
+                        val coords = cardCoordinates ?: return@Button
                         if (isCapturing) return@Button
                         isCapturing = true
                         scope.launch {
                             try {
+                                val rect = coords.boundsInWindow()
+                                val bounds = android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom)
                                 val bitmap = captureRegion(view, bounds)
                                 shareCardBitmap(context, bitmap)
+                            } catch (e: Exception) {
+                                Log.e("BurritoShareCard", "Failed to capture share card", e)
+                                Toast.makeText(context, "Couldn't capture the share card, try again", Toast.LENGTH_SHORT).show()
                             } finally {
                                 isCapturing = false
                             }
@@ -324,52 +316,4 @@ fun BurritoShareCardDialog(
             }
         }
     }
-}
-
-private fun findDialogWindow(view: android.view.View): android.view.Window? {
-    var parent: android.view.ViewParent? = view.parent
-    while (parent != null) {
-        if (parent is DialogWindowProvider) return parent.window
-        parent = parent.parent
-    }
-    return null
-}
-
-private suspend fun captureRegion(view: android.view.View, boundsF: android.graphics.RectF): Bitmap {
-    val bounds = Rect(
-        boundsF.left.toInt(),
-        boundsF.top.toInt(),
-        boundsF.right.toInt(),
-        boundsF.bottom.toInt(),
-    )
-    val window = findDialogWindow(view) ?: (view.context as Activity).window
-    val bitmap = Bitmap.createBitmap(bounds.width(), bounds.height(), Bitmap.Config.ARGB_8888)
-    return suspendCancellableCoroutine { cont ->
-        PixelCopy.request(
-            window,
-            bounds,
-            bitmap,
-            { result ->
-                if (result == PixelCopy.SUCCESS) {
-                    cont.resume(bitmap)
-                } else {
-                    cont.resumeWithException(Exception("PixelCopy failed: $result"))
-                }
-            },
-            Handler(Looper.getMainLooper()),
-        )
-    }
-}
-
-private fun shareCardBitmap(context: Context, bitmap: Bitmap) {
-    val shareDir = File(context.cacheDir, "share").also { it.mkdirs() }
-    val file = File(shareDir, "burrito_card.png")
-    file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "image/png"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    context.startActivity(Intent.createChooser(intent, null))
 }

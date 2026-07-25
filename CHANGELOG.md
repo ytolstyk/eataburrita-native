@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Share card capture failures (e.g. PixelCopy errors) now show a "Couldn't capture the share card, try again" toast instead of failing silently
 
 ## [1.27] - 2026-07-23
 ### Added
@@ -20,7 +22,7 @@
 - Share card dialog now scrolls when its content is taller than the screen, so the "Share as Image"/"Share as Text" buttons at the bottom stay reachable instead of being clipped off-screen
 - Share card now always shows "time since last burrito" as the hero stat, matching the app's core purpose — previously it only showed burrito count, streaks, and personality
 - Location picker modal: keyboard no longer dismisses while typing a restaurant name; autocomplete suggestions now render inline (no popup window) so the IME stays open, and the search field is auto-focused when the dialog opens
-- "Share as Image" now captures the actual share card instead of whatever screen was behind the dialog — the capture was reading pixels from the host Activity's window while the card renders in the Dialog's own separate window; now resolves the real dialog window via `DialogWindowProvider` before calling `PixelCopy`
+- "Share as Image" now captures the actual share card instead of whatever screen was behind the dialog — `LocalView.current` was read outside the `Dialog` content lambda, so it resolved to the host Activity's view/window instead of the Dialog's own separate window, making `PixelCopy` capture the wrong content; `LocalView.current` is now read inside the Dialog content so `DialogWindowProvider` resolves the real dialog window
 
 ### Changed
 - Burrito scanner now uses Gemini 1.5 Flash (cloud vision API) instead of the local TFLite model — delivers witty, burrito-oracle commentary; images are compressed to 512px before sending to reduce token cost
