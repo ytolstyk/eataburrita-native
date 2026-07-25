@@ -73,7 +73,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -85,6 +84,7 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.tolstykh.eatABurrita.BuildConfig
 import com.tolstykh.eatABurrita.data.MenuBurritoItem
+import com.tolstykh.eatABurrita.helpers.shareableUriFor
 import com.tolstykh.eatABurrita.ui.theme.CameraGreen
 import com.tolstykh.eatABurrita.ui.theme.LightCameraGreen
 import kotlinx.coroutines.delay
@@ -122,7 +122,7 @@ fun MenuScannerScreen(
         when {
             cameraPermissionState.status.isGranted -> {
                 val file = viewModel.createMenuScanFile()
-                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val uri = context.shareableUriFor(file)
                 pendingFile = file
                 try {
                     takePictureLauncher.launch(uri)

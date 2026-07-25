@@ -66,7 +66,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -99,6 +98,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
+import com.tolstykh.eatABurrita.helpers.shareableUriFor
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.ui.share.BurritoShareCardDialog
 import com.tolstykh.eatABurrita.location.hasLocationPermission
@@ -812,13 +812,13 @@ private fun CameraRationaleDialog(onDismiss: () -> Unit, onAllow: () -> Unit) {
 private fun createPhotoUri(context: Context): Uri {
     val dir = File(context.cacheDir, "burrito_photos").also { it.mkdirs() }
     val file = File(dir, "classify_${System.currentTimeMillis()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    return context.shareableUriFor(file)
 }
 
 private fun createLogPhotoUri(context: Context): Uri {
     val dir = File(context.cacheDir, "burrito_photos").also { it.mkdirs() }
     val file = File(dir, "log_${System.currentTimeMillis()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    return context.shareableUriFor(file)
 }
 
 @Preview(showBackground = true, heightDp = 200)

@@ -2,8 +2,13 @@ package com.tolstykh.eatABurrita.helpers
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.FileProvider
 import java.io.File
 import java.util.UUID
+
+/** [file] must be under a path declared in res/xml/file_paths.xml. */
+fun Context.shareableUriFor(file: File): Uri =
+    FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
 
 fun copyToPhotoLog(context: Context, sourceUri: Uri): String? {
     return runCatching {

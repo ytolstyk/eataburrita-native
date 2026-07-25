@@ -1,6 +1,7 @@
 package com.tolstykh.eatABurrita.ui.share
 
 import android.content.Intent
+import android.graphics.RectF
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -269,9 +270,9 @@ fun BurritoShareCardDialog(
                         scope.launch {
                             try {
                                 val rect = coords.boundsInWindow()
-                                val bounds = android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom)
+                                val bounds = RectF(rect.left, rect.top, rect.right, rect.bottom)
                                 val bitmap = captureRegion(view, bounds)
-                                shareCardBitmap(context, bitmap)
+                                shareCardBitmapAndRecycle(context, bitmap)
                             } catch (e: Exception) {
                                 Log.e("BurritoShareCard", "Failed to capture share card", e)
                                 Toast.makeText(context, "Couldn't capture the share card, try again", Toast.LENGTH_SHORT).show()

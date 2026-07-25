@@ -12,7 +12,7 @@ import android.view.View
 import android.view.ViewParent
 import android.view.Window
 import androidx.compose.ui.window.DialogWindowProvider
-import androidx.core.content.FileProvider
+import com.tolstykh.eatABurrita.helpers.shareableUriFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -36,6 +36,9 @@ internal fun findDialogWindow(view: View): Window? {
     return null
 }
 
+private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
+
+/** Recycles the captured bitmap itself if the coroutine is cancelled or PixelCopy fails. */
 internal suspend fun captureRegion(view: View, boundsF: RectF): Bitmap {
     val window = findDialogWindow(view)
         ?: error("captureRegion: no DialogWindowProvider above $view — was LocalView.current read outside the Dialog content lambda?")
@@ -47,6 +50,7 @@ internal suspend fun captureRegion(view: View, boundsF: RectF): Bitmap {
     )
     val bitmap = Bitmap.createBitmap(bounds.width(), bounds.height(), Bitmap.Config.ARGB_8888)
     return suspendCancellableCoroutine { cont ->
+        cont.invokeOnCancellation { bitmap.recycle() }
         PixelCopy.request(
             window,
             bounds,
@@ -55,27 +59,32 @@ internal suspend fun captureRegion(view: View, boundsF: RectF): Bitmap {
                 if (result == PixelCopy.SUCCESS) {
                     cont.resume(bitmap)
                 } else {
+                    bitmap.recycle()
                     cont.resumeWithException(Exception("PixelCopy failed: $result"))
                 }
             },
-            Handler(Looper.getMainLooper()),
+            mainHandler,
         )
     }
 }
 
-internal suspend fun shareCardBitmap(context: Context, bitmap: Bitmap) {
-    val uri = withContext(Dispatchers.IO) {
-        val shareDir = File(context.cacheDir, "share").also { it.mkdirs() }
-        shareDir.listFiles()?.forEach { it.delete() }
-        val file = File(shareDir, "burrito_card_${UUID.randomUUID()}.png")
-        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+/** Takes ownership of [bitmap] — it is always recycled, whether the share succeeds or fails. */
+internal suspend fun shareCardBitmapAndRecycle(context: Context, bitmap: Bitmap) {
+    try {
+        val uri = withContext(Dispatchers.IO) {
+            val shareDir = File(context.cacheDir, "share").also { it.mkdirs() }
+            shareDir.listFiles()?.forEach { it.delete() }
+            val file = File(shareDir, "burrito_card_${UUID.randomUUID()}.png")
+            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            context.shareableUriFor(file)
+        }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, null))
+    } finally {
         bitmap.recycle()
-        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "image/png"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    context.startActivity(Intent.createChooser(intent, null))
 }
