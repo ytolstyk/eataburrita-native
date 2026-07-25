@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [1.28] - 2026-07-25
 ### Fixed
 - Share card capture failures (e.g. PixelCopy errors) now show a "Couldn't capture the share card, try again" toast instead of failing silently
 
