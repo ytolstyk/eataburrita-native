@@ -20,3 +20,10 @@ fun copyToPhotoLog(context: Context, sourceUri: Uri): String? {
         dest.absolutePath
     }.getOrNull()
 }
+
+/** Deletes [uri] only if it's a cache file we created via [shareableUriFor] — never a gallery/media URI. */
+fun Context.deleteOwnedCacheUri(uri: Uri?) {
+    if (uri != null && uri.authority == "$packageName.fileprovider") {
+        runCatching { contentResolver.delete(uri, null, null) }
+    }
+}

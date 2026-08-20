@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Tapping "Log Burrito" after the burrito scanner verdict no longer discards the just-taken photo and re-prompts for a new one — the classifier photo now carries into the "Add a photo?" step pre-selected, ready to save with the entry
 
 ## [1.28] - 2026-07-25
 ### Fixed

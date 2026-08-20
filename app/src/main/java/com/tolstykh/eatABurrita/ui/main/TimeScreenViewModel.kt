@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.tolstykh.eatABurrita.helpers.copyToPhotoLog
+import com.tolstykh.eatABurrita.helpers.deleteOwnedCacheUri
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.tolstykh.eatABurrita.classifier.BurritoClassifier
@@ -15,6 +16,7 @@ import com.tolstykh.eatABurrita.location.GetLocationUseCase
 import com.tolstykh.eatABurrita.notification.BurritoNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -298,7 +301,11 @@ class TimeScreenViewModel @Inject constructor(
         _photoPickerOpen.value = false
         val calories = _pendingCalories
         viewModelScope.launch {
-            val savedPath = photoUri?.let { copyToPhotoLog(context, it) }
+            val savedPath = photoUri?.let { uri ->
+                withContext(Dispatchers.IO) { copyToPhotoLog(context, uri) }.also {
+                    context.deleteOwnedCacheUri(uri)
+                }
+            }
             dao.insert(
                 BurritoEntry(
                     timestamp = Instant.now().toEpochMilli(),

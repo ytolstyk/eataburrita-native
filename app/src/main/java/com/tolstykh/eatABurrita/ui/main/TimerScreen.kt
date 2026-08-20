@@ -98,6 +98,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tolstykh.eatABurrita.dateFromMilliseconds
 import com.tolstykh.eatABurrita.formatDuration
+import com.tolstykh.eatABurrita.helpers.deleteOwnedCacheUri
 import com.tolstykh.eatABurrita.helpers.shareableUriFor
 import com.tolstykh.eatABurrita.helpers.statusBarHeight
 import com.tolstykh.eatABurrita.ui.share.BurritoShareCardDialog
@@ -165,10 +166,14 @@ fun TimerScreen(
     var logPhotoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var logCameraTargetUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     val takeLogPhotoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) logPhotoUri = logCameraTargetUri
+        if (success) {
+            context.deleteOwnedCacheUri(logPhotoUri)
+            logPhotoUri = logCameraTargetUri
+        }
         logCameraTargetUri = null
     }
     val pickGalleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        context.deleteOwnedCacheUri(logPhotoUri)
         logPhotoUri = uri
     }
 
@@ -418,6 +423,7 @@ fun TimerScreen(
                 viewModel.onPhotoConfirmed(finalUri)
             },
             onSkip = {
+                context.deleteOwnedCacheUri(logPhotoUri)
                 logPhotoUri = null
                 viewModel.onPhotoSkipped()
             },
@@ -435,7 +441,14 @@ fun TimerScreen(
         BurritoVerdictDialog(
             verdictState = verdictState,
             photoUri = photoUri,
-            onAddEntry = { cleanupPhoto(); viewModel.dismissVerdict(); viewModel.requestAddBurrito() },
+            onAddEntry = {
+                // Hand the already-taken classifier photo off to the log flow's photo
+                // state so PhotoPickerModal opens pre-filled instead of re-prompting.
+                logPhotoUri = photoUri
+                photoUri = null
+                viewModel.dismissVerdict()
+                viewModel.requestAddBurrito()
+            },
             onDismiss = { cleanupPhoto(); viewModel.dismissVerdict() },
         )
     }
